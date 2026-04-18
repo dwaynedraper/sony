@@ -23,6 +23,13 @@ export default function Home() {
             icon="📋"
           />
 
+          <ToolCard
+            title="Display Issues"
+            description="Track alarm, power, and other display problems per store. Data persists between visits."
+            href="/display-issues"
+            icon="⚠️"
+          />
+
           {/* Future tools — cards will be added here */}
         </div>
       </main>
