@@ -9,7 +9,6 @@ import {
   hasAnyIssue,
   issueCount,
   emptyIssues,
-  getStoreLabel,
 } from "@/lib/store-storage";
 import type { CameraIssues, StoreInfo } from "@/lib/store-storage";
 import styles from "./display-issues.module.scss";

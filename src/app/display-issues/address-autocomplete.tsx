@@ -62,6 +62,7 @@ export default function AddressAutocomplete({
 
   // Sync external value changes
   useEffect(() => {
+    // eslint-disable-next-line react-hooks/set-state-in-effect
     setInputValue(value);
   }, [value]);
 

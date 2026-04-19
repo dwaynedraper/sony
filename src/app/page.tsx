@@ -30,7 +30,14 @@ export default function Home() {
             icon="⚠️"
           />
 
-          {/* Future tools — cards will be added here */}
+          <ToolCard
+            title="Camera Finder"
+            description="A quick recommendation tool to help customers find their perfect Sony camera match."
+            href="/camera-finder"
+            icon="📷"
+            badge={{ text: "Experimental", colorClass: "text-red-500" }}
+            disclaimer="* Still under development. Use your professional judgement, results may not be perfect."
+          />
         </div>
       </main>
     </>

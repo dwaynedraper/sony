@@ -39,6 +39,7 @@ export default function DisplayIssuesClient() {
   // ── Mount: load stores, attempt geolocation ─────────────────────────────
   useEffect(() => {
     const storeList = getStoreList();
+    // eslint-disable-next-line react-hooks/set-state-in-effect
     setStores(storeList);
 
     const saved = getActiveStore();
@@ -183,7 +184,7 @@ export default function DisplayIssuesClient() {
       {view === "edit" && activeStore && (
         <StoreForm
           existing={activeStore}
-          onSave={(info) => {
+          onSave={() => {
             refreshStores();
             setView("form");
           }}

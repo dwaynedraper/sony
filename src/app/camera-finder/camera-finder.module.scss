@@ -1,0 +1,260 @@
+.wizardContainer {
+  max-width: 800px;
+  margin: 0 auto;
+  padding: 2rem 1rem;
+}
+
+.header {
+  margin-bottom: 2.5rem;
+}
+
+.stepIndicator {
+  font-size: 0.875rem;
+  color: var(--color-accent);
+  font-weight: 600;
+  margin-bottom: 0.5rem;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+
+.question {
+  font-size: 2rem;
+  font-weight: 700;
+  color: var(--color-foreground);
+  line-height: 1.2;
+}
+
+// Single Select Grid
+.choiceGrid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+  gap: 1rem;
+}
+
+.choiceCard {
+  background: var(--color-surface);
+  border: 2px solid var(--color-border);
+  border-radius: 12px;
+  padding: 1.5rem;
+  cursor: pointer;
+  text-align: left;
+  transition: all 0.2s ease-in-out;
+  color: var(--color-foreground);
+
+  &:hover {
+    background: var(--color-surface-hover);
+    border-color: var(--color-accent-hover);
+    transform: translateY(-2px);
+  }
+
+  &.selected {
+    border-color: var(--color-accent);
+    background: rgba(245, 166, 35, 0.05); // slight tint of accent
+    box-shadow: 0 4px 12px rgba(245, 166, 35, 0.15);
+  }
+}
+
+.choiceLabel {
+  font-weight: 600;
+  font-size: 1.125rem;
+}
+
+// Checkbox Grid
+.checklistGrid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+  gap: 0.75rem;
+}
+
+.checkboxItem {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  background: var(--color-surface);
+  border: 1px solid var(--color-border);
+  border-radius: 8px;
+  padding: 1rem;
+  cursor: pointer;
+  transition: border-color 0.2s ease;
+
+  &:hover {
+    border-color: var(--color-border-light);
+  }
+
+  &.selected {
+    border-color: var(--color-accent);
+    background: rgba(245, 166, 35, 0.05);
+  }
+}
+
+.checkboxInput {
+  width: 1.25rem;
+  height: 1.25rem;
+  accent-color: var(--color-accent);
+}
+
+.checkboxLabel {
+  color: var(--color-text-secondary);
+  font-weight: 500;
+  user-select: none;
+  font-size: 0.9375rem;
+}
+
+// Navigation Bar
+.navBar {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-top: 3rem;
+  padding-top: 1.5rem;
+  border-top: 1px solid var(--color-border);
+}
+
+.btnSecondary {
+  background: none;
+  border: 1px solid var(--color-border-light);
+  color: var(--color-text-secondary);
+  padding: 0.625rem 1.25rem;
+  border-radius: 6px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s ease;
+
+  &:hover {
+    background: var(--color-surface-hover);
+    color: var(--color-foreground);
+  }
+}
+
+.btnPrimary {
+  background: var(--color-accent);
+  border: none;
+  color: #111; // Dark text on accent
+  padding: 0.75rem 1.5rem;
+  border-radius: 6px;
+  font-weight: 700;
+  cursor: pointer;
+  transition: background 0.2s ease;
+
+  &:hover {
+    background: var(--color-accent-hover);
+  }
+
+  &:disabled {
+    background: var(--color-surface-hover);
+    color: var(--color-text-muted);
+    cursor: not-allowed;
+  }
+}
+
+// Results List
+.resultsContainer {
+  display: flex;
+  flex-direction: column;
+  gap: 2rem;
+}
+
+.resultCard {
+  background: var(--color-surface);
+  border: 1px solid var(--color-border);
+  border-radius: 12px;
+  padding: 2rem;
+  position: relative;
+  overflow: hidden;
+
+  &.bestMatch {
+    border-color: var(--color-accent);
+    box-shadow: 0 8px 24px rgba(245, 166, 35, 0.15);
+  }
+}
+
+.resultHeader {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  margin-bottom: 1.5rem;
+  padding-bottom: 1rem;
+  border-bottom: 1px solid var(--color-border);
+}
+
+.resultTitle {
+  font-size: 1.75rem;
+  font-weight: 800;
+  color: var(--color-foreground);
+}
+
+.resultBadge {
+  background: var(--color-border);
+  color: var(--color-text-secondary);
+  padding: 0.25rem 0.75rem;
+  border-radius: 99px;
+  font-size: 0.75rem;
+  font-weight: 700;
+  text-transform: uppercase;
+
+  &.bestBadge {
+    background: var(--color-accent);
+    color: #111;
+  }
+  
+  &.upgradeBadge {
+    background: #4ade80; // green
+    color: #064e3b;
+  }
+  
+  &.saveBadge {
+    background: #60a5fa; // blue
+    color: #1e3a8a;
+  }
+}
+
+.reasonsList {
+  list-style: none;
+  padding: 0;
+  margin: 0 0 1.5rem 0;
+  
+  li {
+    position: relative;
+    padding-left: 1.5rem;
+    margin-bottom: 0.75rem;
+    color: var(--color-text-secondary);
+    line-height: 1.5;
+
+    &::before {
+      content: "✓";
+      position: absolute;
+      left: 0;
+      color: var(--color-accent);
+      font-weight: bold;
+    }
+  }
+}
+
+.tradeoff {
+  font-size: 0.875rem;
+  color: var(--color-text-muted);
+  background: rgba(0,0,0,0.15);
+  padding: 0.75rem 1rem;
+  border-radius: 6px;
+  border-left: 3px solid #ef4444; // red
+}
+
+.tagRow {
+  display: flex;
+  gap: 0.5rem;
+  margin-top: 1.5rem;
+  flex-wrap: wrap;
+}
+
+.fitTag {
+  background: var(--color-elevated);
+  padding: 0.25rem 0.625rem;
+  border-radius: 4px;
+  font-size: 0.75rem;
+  color: var(--color-text-secondary);
+}
+
+.restartBtn {
+  margin-top: 3rem;
+  text-align: center;
+}
