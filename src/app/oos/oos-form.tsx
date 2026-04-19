@@ -37,10 +37,18 @@ export default function OosForm() {
     setChecked((prev) => ({ ...prev, [key]: !prev[key] }));
   };
 
-  // Open modal for a slot
-  const openModal = (section: DisplaySection, slotIndex: number) => {
+  // Handle slot tap — single-option slots toggle directly, multi-option open modal
+  const handleSlotTap = (section: DisplaySection, slotIndex: number) => {
     const slot = section.slots[slotIndex];
     if (slot.options.length === 0) return; // display-only slots
+
+    if (slot.options.length === 1) {
+      // Single option — toggle directly, skip modal
+      toggleOption(optionKey(section.id, slotIndex, 0));
+      return;
+    }
+
+    // Multiple options — open modal
     setModal({ section, slotIndex, slot });
   };
 
@@ -120,7 +128,7 @@ export default function OosForm() {
         key={`${section.id}-${slotIdx}`}
         type="button"
         disabled={!isInteractive}
-        onClick={() => openModal(section, slotIdx)}
+        onClick={() => handleSlotTap(section, slotIdx)}
         className={`${styles.slotCard} ${
           !isInteractive ? styles.slotCardDisabled : ""
         } ${count > 0 ? styles.slotCardActive : ""}`}
