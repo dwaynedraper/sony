@@ -26,7 +26,7 @@ export default function Home() {
           <ToolCard
             title="Display Issues"
             description="Track alarm, power, and other display problems per store. Data persists between visits."
-            href="/display-issues"
+            href="/display-issues?locate=true"
             icon="⚠️"
           />
 

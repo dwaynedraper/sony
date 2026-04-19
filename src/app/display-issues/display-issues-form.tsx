@@ -9,15 +9,17 @@ import {
   hasAnyIssue,
   issueCount,
   emptyIssues,
+  getStoreLabel,
 } from "@/lib/store-storage";
-import type { CameraIssues } from "@/lib/store-storage";
+import type { CameraIssues, StoreInfo } from "@/lib/store-storage";
 import styles from "./display-issues.module.scss";
 
 // ─── Types ──────────────────────────────────────────────────────────────────
 
 interface DisplayIssuesFormProps {
   storeId: string;
-  onChangeStore: () => void;
+  storeInfo?: StoreInfo;
+  onEditStore: () => void;
 }
 
 interface ModalState {
@@ -94,7 +96,8 @@ function generateParagraph(
 
 export default function DisplayIssuesForm({
   storeId,
-  onChangeStore,
+  storeInfo,
+  onEditStore,
 }: DisplayIssuesFormProps) {
   // Load all camera issues from localStorage on mount
   const loadIssueMap = useCallback((): Record<string, CameraIssues> => {
@@ -193,32 +196,44 @@ export default function DisplayIssuesForm({
 
   // ─── JSX ────────────────────────────────────────────────────────────────
 
+  const formattedStoreNum = `Store #${parseInt(storeId.replace(/\D/g, ""), 10)}`;
+  const storeIdentifier = storeInfo?.nickname || formattedStoreNum;
+  
+  const addressParts = storeInfo?.address?.split(", ") || [];
+  const addressLine1 = addressParts[0];
+  const addressLine2 = addressParts.slice(1).join(", ");
+
   return (
     <div className={styles.formWrapper}>
       {/* Header */}
       <div className={styles.formHeader}>
         <div>
-          <h1 className="text-2xl font-bold text-foreground tracking-tight">
+          <h1 className="text-2xl font-bold text-foreground tracking-tight mb-4">
             Display Issues
           </h1>
-          <p className="mt-1 text-sm text-text-secondary">
-            Store{" "}
-            <span className={styles.storeBadge}>BBUY{storeId}</span>
-            {" · "}
-            <button
-              type="button"
-              onClick={onChangeStore}
-              className={styles.changeStoreBtn}
-            >
-              Change Store
-            </button>
-          </p>
+          
+          <div className={styles.storeAddressBlock}>
+            <div className={styles.storeAddressNickname}>{storeIdentifier}</div>
+            {storeInfo?.nickname && <div className={styles.storeAddressNumber}>{formattedStoreNum}</div>}
+            {addressLine1 && <div className={styles.storeAddressText}>{addressLine1}</div>}
+            {addressLine2 && <div className={styles.storeAddressText}>{addressLine2}</div>}
+          </div>
         </div>
-        {totalIssueCount > 0 && (
-          <span className={styles.issueCounter}>
-            {totalIssueCount} {totalIssueCount === 1 ? "issue" : "issues"}
-          </span>
-        )}
+
+        <div className={styles.headerRight}>
+          {totalIssueCount > 0 && (
+            <span className={styles.issueCounter}>
+              {totalIssueCount} {totalIssueCount === 1 ? "issue" : "issues"}
+            </span>
+          )}
+          <button
+            type="button"
+            onClick={onEditStore}
+            className={styles.editStoreBtn}
+          >
+            Edit store info
+          </button>
+        </div>
       </div>
 
       <p className="text-sm text-text-muted mb-4">
@@ -267,7 +282,7 @@ export default function DisplayIssuesForm({
                               handleRepair(cam);
                             }}
                           >
-                            ✓ Fixed
+                            🔧 Mark Fixed
                           </span>
                         </>
                       ) : (
