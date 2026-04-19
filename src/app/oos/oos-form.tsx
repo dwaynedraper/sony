@@ -14,6 +14,15 @@ interface ModalState {
   section: DisplaySection;
   slotIndex: number;
   slot: DisplaySlot;
+  /** Only the camera-body options (filtered) */
+  cameraOptions: { label: string; model: string; originalIdx: number }[];
+}
+
+// ─── Helpers ────────────────────────────────────────────────────────────────
+
+/** Returns true if the option is a lens/accessory (not a camera body/kit) */
+function isLensOrAccessory(model: string): boolean {
+  return model.startsWith("SEL") || model.startsWith("ECM");
 }
 
 // ─── Component ──────────────────────────────────────────────────────────────
@@ -28,28 +37,30 @@ export default function OosForm() {
   const optionKey = (sectionId: string, slotIdx: number, optIdx: number) =>
     `${sectionId}:${slotIdx}:${optIdx}`;
 
-  // Count how many options are checked in a given slot
-  const slotCheckedCount = (sectionId: string, slotIdx: number, slot: DisplaySlot) =>
-    slot.options.filter((_, optIdx) => checked[optionKey(sectionId, slotIdx, optIdx)]).length;
-
   // Toggle a single option
   const toggleOption = (key: string) => {
     setChecked((prev) => ({ ...prev, [key]: !prev[key] }));
   };
 
-  // Handle slot tap — single-option slots toggle directly, multi-option open modal
-  const handleSlotTap = (section: DisplaySection, slotIndex: number) => {
+  // Handle camera card tap
+  const handleCameraTap = (section: DisplaySection, slotIndex: number) => {
     const slot = section.slots[slotIndex];
-    if (slot.options.length === 0) return; // display-only slots
 
-    if (slot.options.length === 1) {
-      // Single option — toggle directly, skip modal
-      toggleOption(optionKey(section.id, slotIndex, 0));
+    // Get only camera-body options (not lenses/accessories)
+    const cameraOptions = slot.options
+      .map((opt, idx) => ({ ...opt, originalIdx: idx }))
+      .filter((opt) => !isLensOrAccessory(opt.model));
+
+    if (cameraOptions.length === 0) return;
+
+    if (cameraOptions.length === 1) {
+      // Single camera option — toggle directly
+      toggleOption(optionKey(section.id, slotIndex, cameraOptions[0].originalIdx));
       return;
     }
 
-    // Multiple options — open modal
-    setModal({ section, slotIndex, slot });
+    // Multiple camera options — open modal
+    setModal({ section, slotIndex, slot, cameraOptions });
   };
 
   // Close modal
@@ -117,45 +128,89 @@ export default function OosForm() {
 
   // ─── Render helpers ───────────────────────────────────────────────────────
 
-  const renderSlotCard = (section: DisplaySection, slotIdx: number) => {
+  const renderSlotCards = (section: DisplaySection, slotIdx: number) => {
     const slot = section.slots[slotIdx];
-    const isInteractive = slot.options.length > 0;
-    const count = isInteractive ? slotCheckedCount(section.id, slotIdx, slot) : 0;
-    const total = slot.options.length;
 
-    return (
-      <button
-        key={`${section.id}-${slotIdx}`}
-        type="button"
-        disabled={!isInteractive}
-        onClick={() => handleSlotTap(section, slotIdx)}
-        className={`${styles.slotCard} ${
-          !isInteractive ? styles.slotCardDisabled : ""
-        } ${count > 0 ? styles.slotCardActive : ""}`}
-        aria-label={
-          isInteractive
-            ? `${slot.name}: ${count} of ${total} checked. Tap to edit.`
-            : `${slot.name}: display only`
-        }
-      >
-        <span className={styles.slotName}>{slot.name}</span>
-        {isInteractive && (
-          <span className={styles.slotBadge}>
-            {count > 0 ? `${count}/${total}` : total}
-          </span>
-        )}
-        {!isInteractive && (
+    // Split into camera options and lens/accessory options
+    const cameraOpts = slot.options
+      .map((opt, idx) => ({ ...opt, originalIdx: idx }))
+      .filter((opt) => !isLensOrAccessory(opt.model));
+    const lensOpts = slot.options
+      .map((opt, idx) => ({ ...opt, originalIdx: idx }))
+      .filter((opt) => isLensOrAccessory(opt.model));
+
+    const isDisplayOnly = slot.options.length === 0;
+    const cameraCheckedCount = cameraOpts.filter(
+      (o) => checked[optionKey(section.id, slotIdx, o.originalIdx)]
+    ).length;
+
+    const cards: React.ReactNode[] = [];
+
+    // ── Camera card ──
+    if (isDisplayOnly) {
+      // Display-only slot (no options at all)
+      cards.push(
+        <button
+          key={`${section.id}-${slotIdx}`}
+          type="button"
+          disabled
+          className={`${styles.slotCard} ${styles.slotCardDisabled}`}
+          aria-label={`${slot.name}: display only`}
+        >
+          <span className={styles.slotName}>{slot.name}</span>
           <span className={styles.slotLabel}>Display Only</span>
-        )}
-      </button>
-    );
+        </button>
+      );
+    } else if (cameraOpts.length > 0) {
+      // Has camera options
+      const totalCam = cameraOpts.length;
+      cards.push(
+        <button
+          key={`${section.id}-${slotIdx}`}
+          type="button"
+          onClick={() => handleCameraTap(section, slotIdx)}
+          className={`${styles.slotCard} ${styles.slotCardCamera} ${
+            cameraCheckedCount > 0 ? styles.slotCardActive : ""
+          }`}
+          aria-label={`${slot.name}: ${cameraCheckedCount} of ${totalCam} checked. Tap to edit.`}
+        >
+          <span className={styles.slotName}>{slot.name}</span>
+          <span className={styles.slotBadge}>
+            {cameraCheckedCount > 0 ? `${cameraCheckedCount}/${totalCam}` : totalCam}
+          </span>
+        </button>
+      );
+    }
+
+    // ── Lens/accessory cards (each rendered individually, right after the camera) ──
+    for (const lensOpt of lensOpts) {
+      const key = optionKey(section.id, slotIdx, lensOpt.originalIdx);
+      const isChecked = !!checked[key];
+
+      cards.push(
+        <button
+          key={key}
+          type="button"
+          onClick={() => toggleOption(key)}
+          className={`${styles.slotCard} ${styles.slotCardLens} ${
+            isChecked ? styles.slotCardActive : ""
+          }`}
+          aria-label={`${lensOpt.label}: ${isChecked ? "checked" : "unchecked"}. Tap to toggle.`}
+        >
+          <span className={styles.slotName}>{lensOpt.label}</span>
+          {isChecked && <span className={styles.slotCheckmark}>✓</span>}
+        </button>
+      );
+    }
+
+    return cards;
   };
 
   const renderSection = (section: DisplaySection) => (
     <div key={section.id} className={styles.section}>
       <h3 className={styles.sectionTitle}>{section.title}</h3>
       <div className={styles.sectionGrid}>
-        {section.slots.map((_, idx) => renderSlotCard(section, idx))}
+        {section.slots.flatMap((_, idx) => renderSlotCards(section, idx))}
       </div>
     </div>
   );
@@ -219,7 +274,7 @@ export default function OosForm() {
         )}
       </div>
 
-      {/* Modal */}
+      {/* Modal — only for multi-option camera slots */}
       {modal && (
         <div
           className={styles.modalOverlay}
@@ -245,11 +300,11 @@ export default function OosForm() {
             </div>
 
             <div className={styles.modalBody}>
-              {modal.slot.options.map((opt, optIdx) => {
+              {modal.cameraOptions.map((opt) => {
                 const key = optionKey(
                   modal.section.id,
                   modal.slotIndex,
-                  optIdx
+                  opt.originalIdx
                 );
                 const isChecked = !!checked[key];
 

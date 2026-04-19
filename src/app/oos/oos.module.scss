@@ -91,6 +91,9 @@ $shadow-modal: 0 8px 32px rgba(0, 0, 0, 0.5);
 
 // ─── Slot Card ───────────────────────────────────────────────────────────
 
+$camera-border: #5ba4cf; // soft teal-blue for camera cards
+$lens-border: #a77bca;   // soft purple for lens/accessory cards
+
 .slotCard {
   display: flex;
   align-items: center;
@@ -102,18 +105,43 @@ $shadow-modal: 0 8px 32px rgba(0, 0, 0, 0.5);
   cursor: pointer;
   transition: all 0.15s ease-in-out;
   text-align: left;
-  min-height: 52px;
+  min-height: 48px;
   -webkit-tap-highlight-color: transparent;
 
   &:hover:not(:disabled) {
     background: $bg-surface-hover;
-    border-color: $accent;
     transform: translateY(-1px);
     box-shadow: $shadow-card;
   }
 
   &:active:not(:disabled) {
     transform: translateY(0);
+  }
+}
+
+.slotCardCamera {
+  border-left: 3px solid $camera-border;
+
+  &:hover:not(:disabled) {
+    border-color: $camera-border;
+    border-left-width: 3px;
+  }
+}
+
+.slotCardLens {
+  border-left: 3px solid $lens-border;
+  min-height: 44px;
+  padding: 0.5rem 1rem;
+
+  .slotName {
+    font-size: 0.8125rem;
+    font-weight: 500;
+    color: $text-secondary;
+  }
+
+  &:hover:not(:disabled) {
+    border-color: $lens-border;
+    border-left-width: 3px;
   }
 }
 
@@ -125,6 +153,19 @@ $shadow-modal: 0 8px 32px rgba(0, 0, 0, 0.5);
 .slotCardActive {
   border-color: $accent;
   background: rgba($accent, 0.08);
+
+  &.slotCardCamera {
+    border-left-color: $accent;
+  }
+
+  &.slotCardLens {
+    border-left-color: $accent;
+
+    .slotName {
+      color: $text-primary;
+      font-weight: 600;
+    }
+  }
 
   .slotBadge {
     background: $accent;
@@ -152,6 +193,13 @@ $shadow-modal: 0 8px 32px rgba(0, 0, 0, 0.5);
   color: $text-secondary;
   background: $bg-elevated;
   border-radius: 999px;
+  flex-shrink: 0;
+}
+
+.slotCheckmark {
+  font-size: 0.875rem;
+  font-weight: 700;
+  color: $accent;
   flex-shrink: 0;
 }
 
