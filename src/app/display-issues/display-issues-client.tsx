@@ -195,6 +195,7 @@ export default function DisplayIssuesClient() {
 
       {view === "form" && activeId && (
         <DisplayIssuesForm
+          key={activeId}
           storeId={activeId}
           storeInfo={activeStore}
           onEditStore={handleEditClick}
