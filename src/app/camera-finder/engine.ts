@@ -5,20 +5,7 @@ export function getRecommendations(answers: AnswerState): FinalRecommendations {
   // 1. Initial Pool
   let pool = [...cameras];
 
-  // 2. Hard Exclusions
-  if (answers.lensPreference === "Built-in lens") {
-    pool = pool.filter(c => c.lensType === "built-in");
-  } else if (answers.lensPreference === "Interchangeable lenses") {
-    pool = pool.filter(c => c.lensType === "interchangeable");
-  }
 
-  if (answers.evfPreference === "Yes, I want an EVF") {
-    pool = pool.filter(c => c.hasEVF);
-  }
-
-  if (answers.sensorPreference === "I strongly want full frame") {
-    pool = pool.filter(c => c.sensor === "full-frame");
-  }
 
   // Must-have features exclusions
   if (answers.mustHaves.includes("IBIS")) pool = pool.filter(c => c.hasIBIS);

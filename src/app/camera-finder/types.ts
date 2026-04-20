@@ -6,9 +6,6 @@ export type AnswerState = {
   seriousness: string | null;
   budgetTier: number | null;
   formFactor: string | null;
-  lensPreference: string | null;
-  evfPreference: string | null;
-  sensorPreference: string | null;
   mustHaves: string[];
 };
 
@@ -20,9 +17,6 @@ export const INITIAL_STATE: AnswerState = {
   seriousness: null,
   budgetTier: null,
   formFactor: null,
-  lensPreference: null,
-  evfPreference: null,
-  sensorPreference: null,
   mustHaves: [],
 };
 

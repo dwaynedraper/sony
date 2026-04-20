@@ -28,7 +28,7 @@ const MUST_HAVES = [
 export default function CameraFinderClient() {
   const [state, setState] = useState<AnswerState>(INITIAL_STATE);
 
-  const totalSteps = 10;
+  const totalSteps = 7;
   const isResults = state.step > totalSteps;
 
   const results = useMemo(() => {
@@ -104,10 +104,7 @@ export default function CameraFinderClient() {
       case 4: return !!state.seriousness;
       case 5: return !!state.budgetTier;
       case 6: return !!state.formFactor;
-      case 7: return !!state.lensPreference;
-      case 8: return !!state.evfPreference;
-      case 9: return !!state.sensorPreference;
-      case 10: return true; // Multi-select can be empty
+      case 7: return true; // Multi-select can be empty
       default: return false;
     }
   };
@@ -194,29 +191,8 @@ export default function CameraFinderClient() {
         "formFactor"
       )}
 
-      {/* STEP 7 */}
-      {state.step === 7 && renderChoice(
-        "Which do you prefer?",
-        ["Built-in lens", "Interchangeable lenses", "I’m open to either"],
-        "lensPreference"
-      )}
-
-      {/* STEP 8 */}
-      {state.step === 8 && renderChoice(
-        "Do you want a viewfinder?",
-        ["Yes, I want an EVF", "No, screen-only is fine", "No preference"],
-        "evfPreference"
-      )}
-
-      {/* STEP 9 */}
-      {state.step === 9 && renderChoice(
-        "What sounds most like you?",
-        ["I strongly want full frame", "I’m open to APS-C if it fits better", "I just want the best fit overall"],
-        "sensorPreference"
-      )}
-
-      {/* STEP 10: Must-Haves */}
-      {state.step === 10 && (
+      {/* STEP 7: Must-Haves */}
+      {state.step === 7 && (
         <div>
           <h2 className={styles.question}>Which features are must-haves for you?</h2>
           <p className="mt-2 text-text-secondary">Select any absolute dealbreakers.</p>
@@ -256,7 +232,7 @@ export default function CameraFinderClient() {
           
           <div style={{ flex: 1 }}></div> // Flexible spacer
           
-          {state.step === 10 && (
+          {state.step === 7 && (
             <button 
               className={styles.btnPrimary} 
               onClick={nextStep}
