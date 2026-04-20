@@ -28,7 +28,7 @@ const MUST_HAVES = [
 export default function CameraFinderClient() {
   const [state, setState] = useState<AnswerState>(INITIAL_STATE);
 
-  const totalSteps = 11;
+  const totalSteps = 10;
   const isResults = state.step > totalSteps;
 
   const results = useMemo(() => {
@@ -108,7 +108,6 @@ export default function CameraFinderClient() {
       case 8: return !!state.evfPreference;
       case 9: return !!state.sensorPreference;
       case 10: return true; // Multi-select can be empty
-      case 11: return !!state.frustration;
       default: return false;
     }
   };
@@ -244,13 +243,6 @@ export default function CameraFinderClient() {
             })}
           </div>
         </div>
-      )}
-
-      {/* STEP 11 */}
-      {state.step === 11 && renderChoice(
-        "What would frustrate you most?",
-        ["Carrying a bulky setup", "Buying extra lenses", "Weak low-light performance", "Missing fast action", "Not enough background blur", "Weak video tools", "Too much editing / complicated workflows", "Spending more than I need"],
-        "frustration"
       )}
 
       {/* Content wrapper for Nav */}

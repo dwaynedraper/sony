@@ -90,25 +90,6 @@ export function getRecommendations(answers: AnswerState): FinalRecommendations {
       score += 3;
       reasons.push("Fast sensor readout for action and sports.");
     }
-
-    // Frustrations
-    if (answers.frustration === "Carrying a bulky setup" && camera.formFactor === "pocketable") {
-      score += 3;
-      reasons.push("Solves your frustration with bulky gear—fits in your pocket.");
-    }
-    if (answers.frustration === "Buying extra lenses" && camera.lensType === "built-in") {
-      score += 3;
-      reasons.push("No extra lenses required; ready to shoot immediately.");
-    }
-    if (answers.frustration === "Weak low-light performance" && camera.lowLightStrong) {
-      score += 3;
-      reasons.push("Eliminates frustration with dark scenes; handles high ISO gracefully.");
-    }
-    if (answers.frustration === "Too much editing / complicated workflows" && camera.sCinetone) {
-      score += 2;
-      reasons.push("S-Cinetone provides gorgeous colors straight out of camera without heavy editing.");
-    }
-
     // Deduplicate reasons
     const uniqueReasons = Array.from(new Set(reasons));
     // Keep top 4

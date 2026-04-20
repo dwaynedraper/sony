@@ -19,7 +19,6 @@ Customer Answers:
 - Primary Use: ${answers.primaryUse}
 - Genre: ${answers.genre || 'N/A'}
 - Budget Tier: ${answers.budgetTier}
-- Frustrations: ${answers.frustration || 'None'}
 - Must Haves: ${answers.mustHaves?.join(', ') || 'None'}
 
 Recommendations:

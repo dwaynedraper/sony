@@ -310,7 +310,7 @@ export const cameras: CameraModel[] = [
     dualSlots: false,
     slog: true,
     sCinetone: true,
-    highResStills: true, // 33mp is great but maybe not "high res" like 61
+    highResStills: false, // 33mp is great but maybe not "high res" like 61
     actionFriendly: false,
     lowLightStrong: true,
     beginnerFriendly: false,
@@ -334,7 +334,7 @@ export const cameras: CameraModel[] = [
     dualSlots: true,
     slog: true,
     sCinetone: true,
-    highResStills: true, // 33MP
+    highResStills: false, // 33MP
     actionFriendly: true,
     lowLightStrong: true,
     beginnerFriendly: false,
@@ -388,9 +388,9 @@ export const cameras: CameraModel[] = [
     beginnerFriendly: false,
     proVideoFriendly: true,
     pocketableSize: false,
-    photoBias: 5,
+    photoBias: 8,
     videoBias: 10,
-    hybridBias: 6,
+    hybridBias: 8,
     bestFor: ["filmmaking", "weddings", "low-light", "documentary"],
   },
   {
@@ -479,14 +479,14 @@ export const cameras: CameraModel[] = [
     dualSlots: true,
     slog: true,
     sCinetone: true,
-    highResStills: true, // likely 33-40MP
+    highResStills: false, // likely 33-40MP
     actionFriendly: true,
     lowLightStrong: true,
     beginnerFriendly: false,
     proVideoFriendly: true,
     pocketableSize: false,
-    photoBias: 9,
-    videoBias: 9,
+    photoBias: 8,
+    videoBias: 8,
     hybridBias: 10,
     bestFor: ["weddings", "events", "portraits", "hybrid", "commercial"],
   }

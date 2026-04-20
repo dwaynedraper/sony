@@ -10,7 +10,6 @@ export type AnswerState = {
   evfPreference: string | null;
   sensorPreference: string | null;
   mustHaves: string[];
-  frustration: string | null;
 };
 
 export const INITIAL_STATE: AnswerState = {
@@ -25,7 +24,6 @@ export const INITIAL_STATE: AnswerState = {
   evfPreference: null,
   sensorPreference: null,
   mustHaves: [],
-  frustration: null,
 };
 
 import { CameraModel } from "./data/cameras";
