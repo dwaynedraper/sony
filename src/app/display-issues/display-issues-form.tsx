@@ -85,10 +85,10 @@ function generateParagraph(
   }
 
   if (sentences.length === 0) {
-    return `BBUY${storeId}: All camera displays are functioning normally.`;
+    return `Store BBUY${storeId} - All camera displays are functioning normally.`;
   }
 
-  return `BBUY${storeId}: ${sentences.join(" ")}`;
+  return `Store BBUY${storeId} - ${sentences.join(" ")}`;
 }
 
 // ─── Component ──────────────────────────────────────────────────────────────
