@@ -26,37 +26,48 @@
 
 // Single Select Grid
 .choiceGrid {
-  display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
-  gap: 1rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
 }
 
 .choiceCard {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0.75rem 1rem;
   background: var(--color-surface);
-  border: 2px solid var(--color-border);
-  border-radius: 12px;
-  padding: 1.5rem;
+  border: 1px solid var(--color-border);
+  border-left: 3px solid #5ba4cf; // match camera-border from OOS
+  border-radius: 10px;
   cursor: pointer;
+  transition: all 0.15s ease-in-out;
   text-align: left;
-  transition: all 0.2s ease-in-out;
-  color: var(--color-foreground);
+  min-height: 48px;
+  color: var(--color-text-secondary);
 
   &:hover {
     background: var(--color-surface-hover);
-    border-color: var(--color-accent-hover);
-    transform: translateY(-2px);
+    border-color: #5ba4cf;
+    border-left-width: 3px;
+    color: var(--color-foreground);
+    transform: translateY(-1px);
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.3);
   }
 
   &.selected {
     border-color: var(--color-accent);
-    background: rgba(245, 166, 35, 0.05); // slight tint of accent
-    box-shadow: 0 4px 12px rgba(245, 166, 35, 0.15);
+    border-left-color: var(--color-accent);
+    color: var(--color-foreground);
+    background: rgba(245, 166, 35, 0.08);
+    font-weight: 600;
   }
 }
 
 .choiceLabel {
+  font-size: 0.875rem;
   font-weight: 600;
-  font-size: 1.125rem;
+  line-height: 1.2;
 }
 
 // Checkbox Grid
@@ -70,20 +81,27 @@
   display: flex;
   align-items: center;
   gap: 0.75rem;
+  padding: 0.75rem 1rem;
   background: var(--color-surface);
   border: 1px solid var(--color-border);
-  border-radius: 8px;
-  padding: 1rem;
+  border-left: 3px solid #5ba4cf; // match choiceCard
+  border-radius: 10px;
   cursor: pointer;
-  transition: border-color 0.2s ease;
+  transition: all 0.15s ease-in-out;
+  min-height: 48px;
 
   &:hover {
-    border-color: var(--color-border-light);
+    background: var(--color-surface-hover);
+    border-color: #5ba4cf;
+    border-left-width: 3px;
+    transform: translateY(-1px);
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.3);
   }
 
   &.selected {
     border-color: var(--color-accent);
-    background: rgba(245, 166, 35, 0.05);
+    border-left-color: var(--color-accent);
+    background: rgba(245, 166, 35, 0.08);
   }
 }
 

@@ -1,7 +1,9 @@
 "use client";
 
-import { useState } from "react";
-import { INITIAL_STATE, AnswerState, FinalRecommendations } from "./types";
+import { useState, useMemo } from "react";
+import { experimental_useObject as useObject } from '@ai-sdk/react';
+import { z } from 'zod';
+import { INITIAL_STATE, AnswerState } from "./types";
 import { getRecommendations } from "./engine";
 import styles from "./camera-finder.module.scss";
 
@@ -25,10 +27,23 @@ const MUST_HAVES = [
 
 export default function CameraFinderClient() {
   const [state, setState] = useState<AnswerState>(INITIAL_STATE);
-  const [results, setResults] = useState<FinalRecommendations | null>(null);
 
   const totalSteps = 11;
   const isResults = state.step > totalSteps;
+
+  const results = useMemo(() => {
+    if (!isResults) return null;
+    return getRecommendations(state);
+  }, [isResults, state]);
+
+  const { submit, isLoading, object, error } = useObject({
+    api: '/api/generate-rationale',
+    schema: z.object({
+      bestReason: z.object({ bullets: z.array(z.string()), tradeoff: z.string() }).optional(),
+      saveReason: z.object({ bullets: z.array(z.string()), tradeoff: z.string() }).optional(),
+      upgradeReason: z.object({ bullets: z.array(z.string()), tradeoff: z.string() }).optional(),
+    }),
+  });
 
   const update = <K extends keyof AnswerState>(key: K, value: AnswerState[K]) => {
     setState(prev => ({ ...prev, [key]: value }));
@@ -36,13 +51,22 @@ export default function CameraFinderClient() {
 
   const nextStep = () => {
     if (state.step === totalSteps) {
-      // Calculate results
       const res = getRecommendations(state);
-      setResults(res);
-      setState(prev => ({ ...prev, step: prev.step + 1 }));
-    } else {
-      setState(prev => ({ ...prev, step: prev.step + 1 }));
+      submit({ answers: state, results: res });
     }
+    setState(prev => ({ ...prev, step: prev.step + 1 }));
+  };
+
+  const handleSingleChoice = <K extends keyof AnswerState>(key: K, value: AnswerState[K]) => {
+    update(key, value);
+    setTimeout(() => {
+      if (state.step === totalSteps) {
+        const finalState = { ...state, [key]: value };
+        const res = getRecommendations(finalState);
+        submit({ answers: finalState, results: res });
+      }
+      setState(prev => ({ ...prev, step: prev.step + 1 }));
+    }, 250);
   };
 
   const prevStep = () => {
@@ -51,7 +75,6 @@ export default function CameraFinderClient() {
 
   const restart = () => {
     setState(INITIAL_STATE);
-    setResults(null);
   };
 
   // Generic Choice Grid Render
@@ -64,7 +87,7 @@ export default function CameraFinderClient() {
             key={opt}
             type="button"
             className={`${styles.choiceCard} ${state[stateKey] === opt ? styles.selected : ""}`}
-            onClick={() => update(stateKey, opt)}
+            onClick={() => handleSingleChoice(stateKey, opt)}
           >
             <span className={styles.choiceLabel}>{opt}</span>
           </button>
@@ -156,7 +179,7 @@ export default function CameraFinderClient() {
                 key={tier.value}
                 type="button"
                 className={`${styles.choiceCard} ${state.budgetTier === tier.value ? styles.selected : ""}`}
-                onClick={() => update("budgetTier", tier.value)}
+                onClick={() => handleSingleChoice("budgetTier", tier.value)}
               >
                 <span className={styles.choiceLabel}>{tier.label}</span>
               </button>
@@ -239,13 +262,16 @@ export default function CameraFinderClient() {
             <div></div> // Spacer
           )}
           
-          <button 
-            className={styles.btnPrimary} 
-            onClick={nextStep}
-            disabled={!canProceed()}
-          >
-            {state.step === totalSteps ? "Show My Results" : "Continue"}
-          </button>
+          <div style={{ flex: 1 }}></div> // Flexible spacer
+          
+          {state.step === 10 && (
+            <button 
+              className={styles.btnPrimary} 
+              onClick={nextStep}
+            >
+              Continue
+            </button>
+          )}
         </div>
       )}
 
@@ -263,12 +289,32 @@ export default function CameraFinderClient() {
                   <h3 className={styles.resultTitle}>{results.best.camera.name}</h3>
                   <span className={`${styles.resultBadge} ${styles.bestBadge}`}>Best Match</span>
                 </div>
-                <ul className={styles.reasonsList}>
-                  {results.best.reasons.map((r, i) => <li key={i}>{r}</li>)}
-                </ul>
-                <div className={styles.tradeoff}>
-                  <strong>Tradeoff:</strong> {results.best.tradeoff}
-                </div>
+                
+                {isLoading && !object?.bestReason?.bullets ? (
+                  <div className="flex gap-2 items-center text-accent text-sm italic font-medium animate-pulse mt-4 bg-black/20 p-4 rounded-lg">
+                    <span>✧</span> AI is analyzing your exact needs...
+                  </div>
+                ) : object?.bestReason?.bullets ? (
+                  <>
+                    <ul className={styles.reasonsList}>
+                      {object.bestReason.bullets.map((r, i) => <li key={i}>{r}</li>)}
+                    </ul>
+                    {object.bestReason.tradeoff && (
+                      <div className={styles.tradeoff}>
+                        <strong>Tradeoff:</strong> {object.bestReason.tradeoff}
+                      </div>
+                    )}
+                  </>
+                ) : (
+                  <>
+                    <ul className={styles.reasonsList}>
+                      {results.best.reasons.map((r, i) => <li key={i}>{r}</li>)}
+                    </ul>
+                    <div className={styles.tradeoff}>
+                      <strong>Tradeoff:</strong> {results.best.tradeoff}
+                    </div>
+                  </>
+                )}
               </div>
             )}
 
@@ -279,12 +325,32 @@ export default function CameraFinderClient() {
                   <h3 className={styles.resultTitle}>{results.save.camera.name}</h3>
                   <span className={`${styles.resultBadge} ${styles.saveBadge}`}>Save Money</span>
                 </div>
-                <ul className={styles.reasonsList}>
-                  {results.save.reasons.map((r, i) => <li key={i}>{r}</li>)}
-                </ul>
-                <div className={styles.tradeoff}>
-                  <strong>Tradeoff:</strong> {results.save.tradeoff}
-                </div>
+                
+                {isLoading && !object?.saveReason?.bullets ? (
+                  <div className="flex gap-2 items-center text-text-muted text-sm italic animate-pulse mt-4 bg-black/20 p-4 rounded-lg">
+                    <span>✧</span> Finding the best budget alternative...
+                  </div>
+                ) : object?.saveReason?.bullets ? (
+                  <>
+                    <ul className={styles.reasonsList}>
+                      {object.saveReason.bullets.map((r, i) => <li key={i}>{r}</li>)}
+                    </ul>
+                    {object.saveReason.tradeoff && (
+                      <div className={styles.tradeoff}>
+                        <strong>Tradeoff:</strong> {object.saveReason.tradeoff}
+                      </div>
+                    )}
+                  </>
+                ) : (
+                  <>
+                    <ul className={styles.reasonsList}>
+                      {results.save.reasons.map((r, i) => <li key={i}>{r}</li>)}
+                    </ul>
+                    <div className={styles.tradeoff}>
+                      <strong>Tradeoff:</strong> {results.save.tradeoff}
+                    </div>
+                  </>
+                )}
               </div>
             )}
 
@@ -295,12 +361,32 @@ export default function CameraFinderClient() {
                   <h3 className={styles.resultTitle}>{results.upgrade.camera.name}</h3>
                   <span className={`${styles.resultBadge} ${styles.upgradeBadge}`}>Premium Upgrade</span>
                 </div>
-                <ul className={styles.reasonsList}>
-                  {results.upgrade.reasons.map((r, i) => <li key={i}>{r}</li>)}
-                </ul>
-                <div className={styles.tradeoff}>
-                  <strong>Tradeoff:</strong> {results.upgrade.tradeoff}
-                </div>
+                
+                {isLoading && !object?.upgradeReason?.bullets ? (
+                  <div className="flex gap-2 items-center text-text-muted text-sm italic animate-pulse mt-4 bg-black/20 p-4 rounded-lg">
+                    <span>✧</span> Calculating the ultimate upgrade...
+                  </div>
+                ) : object?.upgradeReason?.bullets ? (
+                  <>
+                    <ul className={styles.reasonsList}>
+                      {object.upgradeReason.bullets.map((r, i) => <li key={i}>{r}</li>)}
+                    </ul>
+                    {object.upgradeReason.tradeoff && (
+                      <div className={styles.tradeoff}>
+                        <strong>Tradeoff:</strong> {object.upgradeReason.tradeoff}
+                      </div>
+                    )}
+                  </>
+                ) : (
+                  <>
+                    <ul className={styles.reasonsList}>
+                      {results.upgrade.reasons.map((r, i) => <li key={i}>{r}</li>)}
+                    </ul>
+                    <div className={styles.tradeoff}>
+                      <strong>Tradeoff:</strong> {results.upgrade.tradeoff}
+                    </div>
+                  </>
+                )}
               </div>
             )}
             
