@@ -18,7 +18,7 @@ const BUDGET_TIERS = [
 
 const MUST_HAVES = [
   "IBIS", "Full frame", "S-Log", "S-Cinetone", "Built-in lens", 
-  "Interchangeable lenses", "EVF", "Dual card slots", 
+  "Interchangeable lenses", "EVF", "Built-in flash", "Dual card slots", 
   "High burst / action shooting", "Strong low-light performance", 
   "Pocketable size", "Best autofocus", "Long recording reliability", 
   "High resolution stills", "Beginner-friendly simplicity", 

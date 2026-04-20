@@ -28,6 +28,7 @@ export function getRecommendations(answers: AnswerState): FinalRecommendations {
   if (answers.mustHaves.includes("Built-in lens")) pool = pool.filter(c => c.lensType === "built-in");
   if (answers.mustHaves.includes("Interchangeable lenses")) pool = pool.filter(c => c.lensType === "interchangeable");
   if (answers.mustHaves.includes("EVF")) pool = pool.filter(c => c.hasEVF);
+  if (answers.mustHaves.includes("Built-in flash")) pool = pool.filter(c => c.builtinFlash);
   if (answers.mustHaves.includes("Dual card slots")) pool = pool.filter(c => c.dualSlots);
   if (answers.mustHaves.includes("High resolution stills")) pool = pool.filter(c => c.highResStills);
 
