@@ -1,4 +1,4 @@
-import { google } from '@ai-sdk/google';
+import { openai } from '@ai-sdk/openai';
 import { streamObject } from 'ai';
 import { z } from 'zod';
 
@@ -28,7 +28,7 @@ Recommendations:
 `;
 
   const result = await streamObject({
-    model: google('gemini-2.5-flash'),
+    model: openai(process.env.OPENAI_MODEL || 'gpt-5.4-nano'),
     schema: z.object({
       bestReason: z.object({
         bullets: z.array(z.string()).describe("2-3 short, punchy bullet points highlighting why this camera matches their needs."),
