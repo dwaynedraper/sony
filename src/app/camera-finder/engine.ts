@@ -1,128 +1,177 @@
-import { cameras } from "./data/cameras";
-import { AnswerState, FinalRecommendations } from "./types";
+import { cameras, CameraModel, Focus, UseCase } from "./data/cameras";
+import { AnswerState, FinalRecommendations, RecommendationResult } from "./types";
+
+function getFocusScore(camera: CameraModel, focus: Focus) {
+  if (camera.focusScores?.[focus]) return camera.focusScores[focus];
+  if (camera.focusBias === focus) return 10;
+  if (camera.focusBias === "hybrid") return 7;
+  return 3;
+}
+
+function getBeginnerFriendlyScore(camera: CameraModel) {
+  if (typeof camera.beginnerFriendly === "number") return camera.beginnerFriendly;
+  if (camera.skillFit.includes("beginner") && camera.skillFit.includes("advanced")) return 7;
+  if (camera.skillFit.includes("beginner")) return 9;
+  return 3;
+}
+
+function getGenreScore(camera: CameraModel, useCase: UseCase) {
+  if (typeof camera.genreScores?.[useCase] === "number") return camera.genreScores[useCase] as number;
+  if (camera.useCases.includes(useCase)) return 8;
+  return 4;
+}
+
+function getUseCaseSpecContribution(camera: CameraModel, useCase: UseCase) {
+  const spec = camera.specScores;
+  if (!spec) return 0;
+
+  const weightsByUseCase: Record<UseCase, Partial<Record<keyof NonNullable<CameraModel["specScores"]>, number>>> = {
+    cinema_commercial: { cinemaTools: 0.35, lowLight: 0.25, speed: 0.2, bokeh: 0.1, resolution: 0.1 },
+    content_vlogging: { portability: 0.35, cinemaTools: 0.2, lowLight: 0.2, speed: 0.15, bokeh: 0.1 },
+    family_video: { portability: 0.35, lowLight: 0.25, speed: 0.2, cinemaTools: 0.1, bokeh: 0.1 },
+    weddings_events_video: { lowLight: 0.35, speed: 0.25, cinemaTools: 0.2, bokeh: 0.1, portability: 0.1 },
+    documentary_run_gun: { portability: 0.3, lowLight: 0.25, cinemaTools: 0.2, speed: 0.15, bokeh: 0.1 },
+    portraits_headshots: { bokeh: 0.4, resolution: 0.25, lowLight: 0.2, speed: 0.1, portability: 0.05 },
+    real_estate_arch: { resolution: 0.45, lowLight: 0.2, bokeh: 0.15, speed: 0.1, portability: 0.1 },
+    action_sports_photo: { speed: 0.5, lowLight: 0.2, resolution: 0.15, bokeh: 0.1, portability: 0.05 },
+    product_photo: { resolution: 0.45, bokeh: 0.2, lowLight: 0.2, speed: 0.05, portability: 0.1 },
+    lifestyle_photo: { bokeh: 0.25, portability: 0.2, lowLight: 0.2, resolution: 0.2, speed: 0.15 },
+    landscape_wildlife: { resolution: 0.4, speed: 0.25, lowLight: 0.15, portability: 0.1, bokeh: 0.1 },
+    all_rounder: { speed: 0.2, lowLight: 0.2, portability: 0.2, bokeh: 0.15, resolution: 0.15, cinemaTools: 0.1 },
+    travel: { portability: 0.35, resolution: 0.2, lowLight: 0.2, speed: 0.15, bokeh: 0.1 },
+    vlogging: { portability: 0.35, cinemaTools: 0.2, lowLight: 0.2, speed: 0.15, bokeh: 0.1 },
+    portrait: { bokeh: 0.4, resolution: 0.25, lowLight: 0.2, speed: 0.1, portability: 0.05 },
+    sports: { speed: 0.5, lowLight: 0.2, resolution: 0.15, bokeh: 0.1, portability: 0.05 },
+    cinema: { cinemaTools: 0.35, lowLight: 0.25, speed: 0.2, bokeh: 0.1, resolution: 0.1 },
+  };
+
+  const weights = weightsByUseCase[useCase];
+  let weighted = 0;
+  for (const key of Object.keys(weights) as Array<keyof typeof weights>) {
+    weighted += spec[key] * (weights[key] ?? 0);
+  }
+  return weighted * 0.4;
+}
 
 export function getRecommendations(answers: AnswerState): FinalRecommendations {
   // 1. Initial Pool
   let pool = [...cameras];
 
-
-
-  // Must-have features exclusions
-  if (answers.mustHaves.includes("IBIS")) pool = pool.filter(c => c.hasIBIS);
-  if (answers.mustHaves.includes("Full frame")) pool = pool.filter(c => c.sensor === "full-frame");
-  if (answers.mustHaves.includes("S-Log")) pool = pool.filter(c => c.slog);
-  if (answers.mustHaves.includes("S-Cinetone")) pool = pool.filter(c => c.sCinetone);
-  if (answers.mustHaves.includes("Built-in lens")) pool = pool.filter(c => c.lensType === "built-in");
-  if (answers.mustHaves.includes("Interchangeable lenses")) pool = pool.filter(c => c.lensType === "interchangeable");
-  if (answers.mustHaves.includes("EVF")) pool = pool.filter(c => c.hasEVF);
-  if (answers.mustHaves.includes("Built-in flash")) pool = pool.filter(c => c.builtinFlash);
-  if (answers.mustHaves.includes("Dual card slots")) pool = pool.filter(c => c.dualSlots);
-  if (answers.mustHaves.includes("High resolution stills")) pool = pool.filter(c => c.highResStills);
+  // 2. Hard Exclusions based on Must-Haves
+  // Filter out any camera that does not have ALL selected must-haves.
+  pool = pool.filter(camera => {
+    for (const mustHave of answers.mustHaves) {
+      if (!camera.mustHaves.includes(mustHave)) return false;
+    }
+    return true;
+  });
 
   // 3. Score Remaining
   const scoredCameras = pool.map(camera => {
     let score = 0;
-    const reasons: string[] = [];
 
-    // Genre matching
-    if (answers.genre) {
-      const g = answers.genre.toLowerCase();
-      if (
-        (g.includes("vlogging") && camera.bestFor.includes("vlogging")) ||
-        (g.includes("filmmaking") && camera.bestFor.includes("filmmaking")) ||
-        (g.includes("portrait") && camera.bestFor.includes("portraits")) ||
-        (g.includes("street") && camera.bestFor.includes("street")) ||
-        (g.includes("travel") && camera.bestFor.includes("travel")) ||
-        (g.includes("wildlife") && camera.bestFor.includes("wildlife")) ||
-        (g.includes("event") && (camera.bestFor.includes("events") || camera.bestFor.includes("weddings"))) ||
-        (g.includes("client") && camera.bestFor.includes("commercial"))
-      ) {
-        score += 5;
-        reasons.push("Perfect match for your primary genre.");
+    if (answers.focus) {
+      score += getFocusScore(camera, answers.focus) * 0.5;
+    }
+
+    if (answers.useCase && camera.useCases.includes(answers.useCase)) {
+      score += 2;
+    }
+
+    if (answers.useCase) {
+      score += getGenreScore(camera, answers.useCase) * 0.45;
+      score += getUseCaseSpecContribution(camera, answers.useCase);
+    }
+
+    if (answers.focus === "video" && answers.useCase === "cinema_commercial") {
+      const isCinemaBody = ["FX3A", "FX30 Body"].includes(camera.name);
+      const isVideoSpecialist = camera.name === "A7S III";
+      const isHybridLeaning = ["FX2", "A7 IV Body", "A7 V Body", "A7C II", "A6700"].includes(camera.name);
+      if (isCinemaBody) score += 4;
+      if (isVideoSpecialist) score += 3;
+      if (isHybridLeaning) score -= 2;
+    }
+
+    if (answers.skill) {
+      const beginnerFriendly = getBeginnerFriendlyScore(camera);
+      if (answers.skill === "beginner") {
+        score += beginnerFriendly * 0.4;
+      } else {
+        score += (11 - beginnerFriendly) * 0.4;
       }
     }
 
-    // Usability & Seriousness
-    if (answers.experience === "Beginner" && camera.beginnerFriendly) {
-      score += 4;
-      reasons.push("Extremely beginner-friendly and easy to use out of the box.");
-    }
-    if ((answers.seriousness === "This is professional / client-paid work" || answers.mustHaves.includes("Pro video workflow features")) && camera.proVideoFriendly) {
-      score += 5;
-      reasons.push("Built for professional workflows and rigorous client demands.");
+    if (answers.intent && camera.intentFit.includes(answers.intent)) {
+      score += 3;
     }
 
-    // Photo/Video Bias
-    if (answers.primaryUse === "Photo") {
-      score += (camera.photoBias * 0.5);
-      if (camera.photoBias > 7) reasons.push("Top-tier photography performance.");
-    } else if (answers.primaryUse === "Video") {
-      score += (camera.videoBias * 0.5);
-      if (camera.videoBias > 7) reasons.push("Incredible dedicated video features.");
-    } else if (answers.primaryUse === "Both photo and video") {
-      score += (camera.hybridBias * 0.5);
-      if (camera.hybridBias > 7) reasons.push("Excellent true hybrid capabilities.");
+    if (answers.formFactor) {
+      if (answers.formFactor === camera.formFactor) {
+        score += 3;
+      } else if (answers.formFactor === "any") {
+        score += 1;
+      }
     }
 
-    // Soft Checkbox Matches
-    if (answers.mustHaves.includes("Strong low-light performance") && camera.lowLightStrong) {
-      score += 3;
-      reasons.push("Class-leading low light capabilities.");
-    }
-    if (answers.mustHaves.includes("Pocketable size") && camera.pocketableSize) {
-      score += 3;
-      reasons.push("Compact and highly portable.");
-    }
-    if (answers.mustHaves.includes("High burst / action shooting") && camera.actionFriendly) {
-      score += 3;
-      reasons.push("Fast sensor readout for action and sports.");
-    }
-    // Deduplicate reasons
-    const uniqueReasons = Array.from(new Set(reasons));
-    // Keep top 4
-    const finalReasons = uniqueReasons.slice(0, 4);
-    if (finalReasons.length === 0) {
-      finalReasons.push("A strong all-around choice for your settings.");
-    }
+    const baseScore = score;
 
-    let tradeoff = "";
-    if (camera.lensType === "built-in") tradeoff = "You cannot upgrade the lens later.";
-    else if (!camera.hasEVF) tradeoff = "No viewfinder, relies solely on the back screen.";
-    else if (!camera.hasIBIS) tradeoff = "Lacks in-body stabilization; requires stabilized lenses or gimbal.";
-    else if (camera.sensor === "1-inch") tradeoff = "Smaller sensor yields less background blur than APS-C or Full Frame.";
-    else tradeoff = "Larger investment and slightly larger footprint.";
+    // Soft-Bias Budget Penalty
+    // Exceeding the budget applies a heavy penalty (-6 points per tier difference), 
+    // ensuring expensive cameras fall to the bottom UNLESS their spec scores perfectly align 
+    // when nothing else does (e.g. demanding 8k on an entry budget).
+    const tierMap = { entry: 1, mid: 2, premium: 3, no_limit: 4 };
+    if (answers.budget) {
+      const targetTier = tierMap[answers.budget];
+      const cameraTier = tierMap[camera.tier];
+      
+      if (cameraTier > targetTier) {
+        const diff = cameraTier - targetTier;
+        score -= (diff * 6); // Hard penalty
+      } else if (cameraTier === targetTier) {
+        score += 2; // Slight reward for exact match
+      }
+    }
 
     return {
       camera,
       score,
-      reasons: finalReasons,
-      tradeoff
+      baseScore,
+      isOverBudget: answers.budget ? tierMap[camera.tier] > tierMap[answers.budget] : false
     };
   });
 
-  // Sort descending by score
   scoredCameras.sort((a, b) => b.score - a.score);
 
-  const targetTier = answers.budgetTier ?? 6;
-
-  // Best: Highest score where priceTier <= targetTier
-  const bestMatches = scoredCameras.filter(c => c.camera.priceTier <= targetTier);
-  let best = bestMatches.length > 0 ? bestMatches[0] : null;
-
-  // Save: Highest score strictly lower than targetTier, excluding best
-  const saveMatches = scoredCameras.filter(c => c.camera.priceTier < targetTier && c.camera.id !== best?.camera.id);
-  // If targettier is 1, saveMatches will naturally be empty
-  const save = saveMatches.length > 0 ? saveMatches[0] : null;
-
-  // Upgrade: Highest score strictly higher than targetTier
-  const upgradeMatches = scoredCameras.filter(c => c.camera.priceTier > targetTier && c.camera.id !== best?.camera.id);
-  const upgrade = upgradeMatches.length > 0 ? upgradeMatches[0] : null;
-
-  // If no best match found under budget (e.g. strict exclusions pushed price up)
-  // Just give them the absolute highest score overall as 'best'
-  if (!best && scoredCameras.length > 0) {
-    best = scoredCameras[0];
+  if (scoredCameras.length === 0) {
+    return { best: null, alternatives: [] };
   }
 
-  return { best, save, upgrade };
+  const best = scoredCameras[0];
+  let alternatives = scoredCameras.slice(1);
+
+  // Identify Stretch Pick: An alternative that mathematically scored higher than the Best Pick (baseScore),
+  // but lost because it was over budget. We take the one with the absolute highest baseScore possible.
+  let stretchPickIndex = -1;
+  let highestBaseScore = -1;
+
+  for (let i = 0; i < alternatives.length; i++) {
+    const alt = alternatives[i];
+    if (alt.isOverBudget && alt.baseScore > best.baseScore && alt.baseScore > highestBaseScore) {
+      highestBaseScore = alt.baseScore;
+      stretchPickIndex = i;
+    }
+  }
+
+  if (stretchPickIndex !== -1) {
+    const stretchPick = alternatives[stretchPickIndex];
+    (stretchPick as RecommendationResult).isStretchPick = true;
+    alternatives.splice(stretchPickIndex, 1);
+    alternatives.unshift(stretchPick);
+  }
+
+  // Remove the temporary baseScore from the final interface cast
+  return {
+    best,
+    alternatives: alternatives.slice(0, 3)
+  };
 }

@@ -1,36 +1,36 @@
+import { Focus, UseCase, Skill, Intent, Budget, FormFactor, MustHave, CameraModel } from "./data/cameras";
+
 export type AnswerState = {
   step: number;
-  primaryUse: string | null;
-  genre: string | null;
-  experience: string | null;
-  seriousness: string | null;
-  budgetTier: number | null;
-  formFactor: string | null;
-  mustHaves: string[];
+  focus: Focus | null;
+  useCase: UseCase | null;
+  skill: Skill | null;
+  intent: Intent | null;
+  budget: Budget | null;
+  formFactor: FormFactor | null;
+  mustHaves: MustHave[];
 };
 
 export const INITIAL_STATE: AnswerState = {
   step: 1,
-  primaryUse: null,
-  genre: null,
-  experience: null,
-  seriousness: null,
-  budgetTier: null,
+  focus: null,
+  useCase: null,
+  skill: null,
+  intent: null,
+  budget: null,
   formFactor: null,
   mustHaves: [],
 };
 
-import { CameraModel } from "./data/cameras";
-
 export interface RecommendationResult {
   camera: CameraModel;
   score: number;
-  reasons: string[];
-  tradeoff: string;
+  isOverBudget: boolean;
+  isStretchPick?: boolean;
+  baseScore?: number;
 }
 
 export interface FinalRecommendations {
   best: RecommendationResult | null;
-  save: RecommendationResult | null;
-  upgrade: RecommendationResult | null;
+  alternatives: RecommendationResult[];
 }

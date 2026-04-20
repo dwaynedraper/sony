@@ -6,23 +6,73 @@ import { z } from 'zod';
 import { INITIAL_STATE, AnswerState } from "./types";
 import { getRecommendations } from "./engine";
 import styles from "./camera-finder.module.scss";
+import { Focus, UseCase, Skill, Intent, Budget, FormFactor, MustHave } from "./data/cameras";
 
-const BUDGET_TIERS = [
-  { label: "Under $700", value: 1 },
-  { label: "$700 – $1,000", value: 2 },
-  { label: "$1,000 – $1,500", value: 3 },
-  { label: "$1,500 – $2,200", value: 4 },
-  { label: "$2,200 – $3,200", value: 5 },
-  { label: "$3,200+", value: 6 },
+const FOCUS_OPTIONS: { id: Focus, label: string }[] = [
+  { id: "video", label: "Mostly video" },
+  { id: "hybrid", label: "Hybrid photo + video" },
+  { id: "photo", label: "Mostly photo" },
 ];
 
-const MUST_HAVES = [
-  "IBIS", "Full frame", "S-Log", "S-Cinetone", "Built-in lens", 
-  "Interchangeable lenses", "EVF", "Built-in flash", "Dual card slots", 
-  "High burst / action shooting", "Strong low-light performance", 
-  "Pocketable size", "Best autofocus", "Long recording reliability", 
-  "High resolution stills", "Beginner-friendly simplicity", 
-  "Pro video workflow features"
+const VIDEO_GENRE_OPTIONS: { id: UseCase; label: string }[] = [
+  { id: "cinema_commercial", label: "Cinema / commercial" },
+  { id: "content_vlogging", label: "Content / vlogging" },
+  { id: "family_video", label: "Family / casual capture" },
+  { id: "weddings_events_video", label: "Weddings / events" },
+  { id: "documentary_run_gun", label: "Documentary / run-and-gun" },
+];
+
+const PHOTO_GENRE_OPTIONS: { id: UseCase; label: string }[] = [
+  { id: "portraits_headshots", label: "Portraits / headshots" },
+  { id: "real_estate_arch", label: "Real estate / architecture" },
+  { id: "action_sports_photo", label: "Action / sports" },
+  { id: "product_photo", label: "Product / commercial stills" },
+  { id: "lifestyle_photo", label: "Lifestyle / general photo" },
+  { id: "landscape_wildlife", label: "Landscape / wildlife" },
+];
+
+const HYBRID_GENRE_OPTIONS: { id: UseCase; label: string }[] = [
+  { id: "all_rounder", label: "All-rounder mixed use" },
+  { id: "travel", label: "Travel / everyday carry" },
+  { id: "content_vlogging", label: "Content / social + stills mix" },
+  { id: "weddings_events_video", label: "Weddings / events hybrid" },
+  { id: "documentary_run_gun", label: "Run-and-gun creator work" },
+];
+
+const SKILL_OPTIONS: { id: Skill; label: string }[] = [
+  { id: "beginner", label: "Beginner" },
+  { id: "advanced", label: "Advanced" },
+];
+
+const INTENT_OPTIONS: { id: Intent; label: string }[] = [
+  { id: "fun", label: "Just for fun" },
+  { id: "work", label: "I make some money with it" },
+  { id: "pro", label: "This is professional / client-paid work" },
+];
+
+const BUDGET_TIERS: { id: Budget; label: string }[] = [
+  { id: "entry", label: "Entry (Under $1,000)" },
+  { id: "mid", label: "Mid ($1,000 – $2,200)" },
+  { id: "premium", label: "Premium ($2,200+)" },
+  { id: "no_limit", label: "No limit" },
+];
+
+const FORM_OPTIONS: { id: FormFactor; label: string }[] = [
+  { id: "pocketable", label: "Pocketable if possible" },
+  { id: "compact", label: "Small and lightweight" },
+  { id: "any", label: "Size does not matter" },
+];
+
+const MUST_HAVES: { id: MustHave, label: string }[] = [
+  { id: "full_frame", label: "Full-frame sensor" },
+  { id: "ibis", label: "In-body image stabilization (IBIS)" },
+  { id: "evf", label: "Electronic viewfinder (EVF)" },
+  { id: "built_in_flash", label: "Built-in flash" },
+  { id: "log_profiles", label: "Log profiles" },
+  { id: "interchangeable_lenses", label: "Interchangeable lenses" },
+  { id: "high_burst", label: "High burst/action capable" },
+  { id: "strong_low_light", label: "Strong low-light performance" },
+  { id: "high_resolution", label: "High resolution" },
 ];
 
 export default function CameraFinderClient() {
@@ -39,9 +89,8 @@ export default function CameraFinderClient() {
   const { submit, isLoading, object, error } = useObject({
     api: '/api/generate-rationale',
     schema: z.object({
-      bestReason: z.object({ bullets: z.array(z.string()), tradeoff: z.string() }).optional(),
-      saveReason: z.object({ bullets: z.array(z.string()), tradeoff: z.string() }).optional(),
-      upgradeReason: z.object({ bullets: z.array(z.string()), tradeoff: z.string() }).optional(),
+      bestReason: z.object({ text: z.string(), tradeoff: z.string() }),
+      alternatives: z.array(z.object({ sku: z.string(), text: z.string(), tradeoff: z.string() })),
     }),
   });
 
@@ -59,6 +108,7 @@ export default function CameraFinderClient() {
 
   const handleSingleChoice = <K extends keyof AnswerState>(key: K, value: AnswerState[K]) => {
     update(key, value);
+    // Auto-advance after small delay for single choice buttons
     setTimeout(() => {
       if (state.step === totalSteps) {
         const finalState = { ...state, [key]: value };
@@ -77,19 +127,22 @@ export default function CameraFinderClient() {
     setState(INITIAL_STATE);
   };
 
-  // Generic Choice Grid Render
-  const renderChoice = (question: string, options: string[], stateKey: keyof AnswerState) => (
+  const renderChoice = <K extends keyof AnswerState, V extends string>(
+    question: string,
+    options: { id: V; label: string }[],
+    stateKey: K
+  ) => (
     <div>
       <h2 className={styles.question}>{question}</h2>
       <div className={`${styles.choiceGrid} mt-8`}>
         {options.map(opt => (
           <button
-            key={opt}
+            key={opt.id}
             type="button"
-            className={`${styles.choiceCard} ${state[stateKey] === opt ? styles.selected : ""}`}
-            onClick={() => handleSingleChoice(stateKey, opt)}
+            className={`${styles.choiceCard} ${state[stateKey] as unknown === opt.id as unknown ? styles.selected : ""}`}
+            onClick={() => handleSingleChoice(stateKey, opt.id as unknown as AnswerState[K])}
           >
-            <span className={styles.choiceLabel}>{opt}</span>
+            <span className={styles.choiceLabel}>{opt.label}</span>
           </button>
         ))}
       </div>
@@ -98,16 +151,20 @@ export default function CameraFinderClient() {
 
   const canProceed = () => {
     switch (state.step) {
-      case 1: return !!state.primaryUse;
-      case 2: return !!state.genre;
-      case 3: return !!state.experience;
-      case 4: return !!state.seriousness;
-      case 5: return !!state.budgetTier;
+      case 1: return !!state.focus;
+      case 2: return !!state.useCase;
+      case 3: return !!state.skill;
+      case 4: return !!state.intent;
+      case 5: return !!state.budget;
       case 6: return !!state.formFactor;
       case 7: return true; // Multi-select can be empty
       default: return false;
     }
   };
+
+  let genreOptions = HYBRID_GENRE_OPTIONS;
+  if (state.focus === "video") genreOptions = VIDEO_GENRE_OPTIONS;
+  else if (state.focus === "photo") genreOptions = PHOTO_GENRE_OPTIONS;
 
   return (
     <div className={styles.wizardContainer}>
@@ -126,43 +183,17 @@ export default function CameraFinderClient() {
         </div>
       )}
 
-      {/* STEP 1: Primary Use */}
-      {state.step === 1 && renderChoice(
-        "What are you primarily buying this camera for?",
-        ["Photo", "Video", "Both photo and video"],
-        "primaryUse"
-      )}
+      {/* STEP 1: Primary Focus */}
+      {state.step === 1 && renderChoice("What are you primarily buying this camera for?", FOCUS_OPTIONS, "focus")}
 
-      {/* STEP 2: Path-specific genre */}
-      {state.step === 2 && state.primaryUse === "Video" && renderChoice(
-        "What kind of video work do you do most?",
-        ["Vlogging", "Filmmaking / narrative", "Client work / commercial", "YouTube / talking head", "Social content / short-form", "Events / documentary / run-and-gun"],
-        "genre"
-      )}
-      {state.step === 2 && state.primaryUse === "Photo" && renderChoice(
-        "What kind of photography do you do most?",
-        ["Portraits", "Street / everyday carry", "Travel", "Landscape", "Wildlife / birds", "Sports / action", "Real estate / architecture", "Events / weddings", "Product / studio", "Family / lifestyle"],
-        "genre"
-      )}
-      {state.step === 2 && state.primaryUse === "Both photo and video" && renderChoice(
-        "What matters slightly more to you?",
-        ["Photo leaning", "Balanced hybrid", "Video leaning"],
-        "genre"
-      )}
+      {/* STEP 2: Genre */}
+      {state.step === 2 && renderChoice("What kind of work do you do most?", genreOptions, "useCase")}
 
-      {/* STEP 3 */}
-      {state.step === 3 && renderChoice(
-        "What best describes your experience level?",
-        ["Beginner", "Intermediate", "Advanced"],
-        "experience"
-      )}
+      {/* STEP 3: Skill */}
+      {state.step === 3 && renderChoice("What best describes your experience level?", SKILL_OPTIONS, "skill")}
 
-      {/* STEP 4 */}
-      {state.step === 4 && renderChoice(
-        "How serious is this for you?",
-        ["Just for fun", "Serious hobby", "I make some money with it", "This is professional / client-paid work"],
-        "seriousness"
-      )}
+      {/* STEP 4: Intent */}
+      {state.step === 4 && renderChoice("How serious is this for you?", INTENT_OPTIONS, "intent")}
 
       {/* STEP 5: Budget */}
       {state.step === 5 && (
@@ -172,10 +203,10 @@ export default function CameraFinderClient() {
           <div className={`${styles.choiceGrid} mt-8`}>
             {BUDGET_TIERS.map(tier => (
               <button
-                key={tier.value}
+                key={tier.id}
                 type="button"
-                className={`${styles.choiceCard} ${state.budgetTier === tier.value ? styles.selected : ""}`}
-                onClick={() => handleSingleChoice("budgetTier", tier.value)}
+                className={`${styles.choiceCard} ${state.budget === tier.id ? styles.selected : ""}`}
+                onClick={() => handleSingleChoice("budget", tier.id)}
               >
                 <span className={styles.choiceLabel}>{tier.label}</span>
               </button>
@@ -184,12 +215,8 @@ export default function CameraFinderClient() {
         </div>
       )}
 
-      {/* STEP 6 */}
-      {state.step === 6 && renderChoice(
-        "How important is size and portability?",
-        ["Pocketable if possible", "Small and lightweight", "Standard camera size is fine", "Size does not matter"],
-        "formFactor"
-      )}
+      {/* STEP 6: Form Factor */}
+      {state.step === 6 && renderChoice("How important is size and portability?", FORM_OPTIONS, "formFactor")}
 
       {/* STEP 7: Must-Haves */}
       {state.step === 7 && (
@@ -198,10 +225,10 @@ export default function CameraFinderClient() {
           <p className="mt-2 text-text-secondary">Select any absolute dealbreakers.</p>
           <div className={`${styles.checklistGrid} mt-8`}>
             {MUST_HAVES.map(item => {
-              const isSelected = state.mustHaves.includes(item);
+              const isSelected = state.mustHaves.includes(item.id);
               return (
                 <label 
-                  key={item}
+                  key={item.id}
                   className={`${styles.checkboxItem} ${isSelected ? styles.selected : ""}`}
                 >
                   <input 
@@ -209,11 +236,11 @@ export default function CameraFinderClient() {
                     className={styles.checkboxInput}
                     checked={isSelected}
                     onChange={(e) => {
-                      if (e.target.checked) update("mustHaves", [...state.mustHaves, item]);
-                      else update("mustHaves", state.mustHaves.filter(i => i !== item));
+                      if (e.target.checked) update("mustHaves", [...state.mustHaves, item.id]);
+                      else update("mustHaves", state.mustHaves.filter(i => i !== item.id));
                     }}
                   />
-                  <span className={styles.checkboxLabel}>{item}</span>
+                  <span className={styles.checkboxLabel}>{item.label}</span>
                 </label>
               );
             })}
@@ -233,10 +260,7 @@ export default function CameraFinderClient() {
           <div style={{ flex: 1 }}></div> // Flexible spacer
           
           {state.step === 7 && (
-            <button 
-              className={styles.btnPrimary} 
-              onClick={nextStep}
-            >
+            <button className={styles.btnPrimary} onClick={nextStep}>
               Continue
             </button>
           )}
@@ -254,19 +278,24 @@ export default function CameraFinderClient() {
             {results.best && (
               <div className={`${styles.resultCard} ${styles.bestMatch}`}>
                 <div className={styles.resultHeader}>
-                  <h3 className={styles.resultTitle}>{results.best.camera.name}</h3>
+                  <div className="flex flex-col">
+                    <h3 className={styles.resultTitle}>{results.best.camera.name}</h3>
+                    {results.best.isOverBudget && (
+                      <span className="text-red-500 font-bold mt-1">$$$ Above original budget tier</span>
+                    )}
+                  </div>
                   <span className={`${styles.resultBadge} ${styles.bestBadge}`}>Best Match</span>
                 </div>
                 
-                {isLoading && !object?.bestReason?.bullets ? (
+                {isLoading && !object?.bestReason?.text ? (
                   <div className="flex gap-2 items-center text-accent text-sm italic font-medium animate-pulse mt-4 bg-black/20 p-4 rounded-lg">
                     <span>✧</span> AI is analyzing your exact needs...
                   </div>
-                ) : object?.bestReason?.bullets ? (
+                ) : object?.bestReason?.text ? (
                   <>
-                    <ul className={styles.reasonsList}>
-                      {object.bestReason.bullets.map((r, i) => <li key={i}>{r}</li>)}
-                    </ul>
+                    <p className="mt-4 text-slate-300 leading-relaxed">
+                      {object.bestReason.text}
+                    </p>
                     {object.bestReason.tradeoff && (
                       <div className={styles.tradeoff}>
                         <strong>Tradeoff:</strong> {object.bestReason.tradeoff}
@@ -274,95 +303,68 @@ export default function CameraFinderClient() {
                     )}
                   </>
                 ) : (
-                  <>
-                    <ul className={styles.reasonsList}>
-                      {results.best.reasons.map((r, i) => <li key={i}>{r}</li>)}
-                    </ul>
-                    <div className={styles.tradeoff}>
-                      <strong>Tradeoff:</strong> {results.best.tradeoff}
-                    </div>
-                  </>
+                  <p className="mt-4 text-slate-300 leading-relaxed text-sm italic">
+                    {results.best.camera.shortWhy}
+                  </p>
                 )}
               </div>
             )}
 
-            {/* SAVE MONEY */}
-            {results.save && (
-              <div className={styles.resultCard}>
-                <div className={styles.resultHeader}>
-                  <h3 className={styles.resultTitle}>{results.save.camera.name}</h3>
-                  <span className={`${styles.resultBadge} ${styles.saveBadge}`}>Save Money</span>
-                </div>
-                
-                {isLoading && !object?.saveReason?.bullets ? (
-                  <div className="flex gap-2 items-center text-text-muted text-sm italic animate-pulse mt-4 bg-black/20 p-4 rounded-lg">
-                    <span>✧</span> Finding the best budget alternative...
-                  </div>
-                ) : object?.saveReason?.bullets ? (
-                  <>
-                    <ul className={styles.reasonsList}>
-                      {object.saveReason.bullets.map((r, i) => <li key={i}>{r}</li>)}
-                    </ul>
-                    {object.saveReason.tradeoff && (
-                      <div className={styles.tradeoff}>
-                        <strong>Tradeoff:</strong> {object.saveReason.tradeoff}
-                      </div>
-                    )}
-                  </>
-                ) : (
-                  <>
-                    <ul className={styles.reasonsList}>
-                      {results.save.reasons.map((r, i) => <li key={i}>{r}</li>)}
-                    </ul>
-                    <div className={styles.tradeoff}>
-                      <strong>Tradeoff:</strong> {results.save.tradeoff}
-                    </div>
-                  </>
-                )}
-              </div>
-            )}
+            {/* ALTERNATIVES */}
+            {results.alternatives.map((alt, idx) => {
+              const altAI = object?.alternatives?.find(a => a?.sku === alt.camera.sku);
 
-            {/* UPGRADE */}
-            {results.upgrade && (
-              <div className={styles.resultCard}>
-                <div className={styles.resultHeader}>
-                  <h3 className={styles.resultTitle}>{results.upgrade.camera.name}</h3>
-                  <span className={`${styles.resultBadge} ${styles.upgradeBadge}`}>Premium Upgrade</span>
-                </div>
-                
-                {isLoading && !object?.upgradeReason?.bullets ? (
-                  <div className="flex gap-2 items-center text-text-muted text-sm italic animate-pulse mt-4 bg-black/20 p-4 rounded-lg">
-                    <span>✧</span> Calculating the ultimate upgrade...
-                  </div>
-                ) : object?.upgradeReason?.bullets ? (
-                  <>
-                    <ul className={styles.reasonsList}>
-                      {object.upgradeReason.bullets.map((r, i) => <li key={i}>{r}</li>)}
-                    </ul>
-                    {object.upgradeReason.tradeoff && (
-                      <div className={styles.tradeoff}>
-                        <strong>Tradeoff:</strong> {object.upgradeReason.tradeoff}
-                      </div>
-                    )}
-                  </>
-                ) : (
-                  <>
-                    <ul className={styles.reasonsList}>
-                      {results.upgrade.reasons.map((r, i) => <li key={i}>{r}</li>)}
-                    </ul>
-                    <div className={styles.tradeoff}>
-                      <strong>Tradeoff:</strong> {results.upgrade.tradeoff}
+              return (
+                <div key={alt.camera.sku} className={styles.resultCard}>
+                  <div className={styles.resultHeader}>
+                    <div className="flex flex-col">
+                      <h3 className={styles.resultTitle}>{alt.camera.name}</h3>
+                      {alt.isOverBudget && (
+                        <span className="text-red-500 font-bold mt-1">$$$ Above original budget tier</span>
+                      )}
                     </div>
-                  </>
-                )}
-              </div>
-            )}
+                    {alt.isStretchPick ? (
+                      <span className={`${styles.resultBadge} ${styles.bestBadge}`} style={{ backgroundColor: '#eab308', color: '#1a1a1a' }}>Stretch Pick</span>
+                    ) : idx === 0 ? (
+                      <span className={`${styles.resultBadge} ${styles.saveBadge}`}>Top Alternative</span>
+                    ) : null}
+                  </div>
+                  
+                  {alt.isStretchPick && (
+                    <p className="mt-2 text-yellow-500 text-sm font-medium italic mb-2">
+                      The best fit if your budget could be stretched would actually be this.
+                    </p>
+                  )}
+                  
+                  {isLoading && !altAI?.text ? (
+                    <div className="flex gap-2 items-center text-text-muted text-sm italic animate-pulse mt-4 bg-black/20 p-4 rounded-lg">
+                      <span>✧</span> Analyzing alternative capability...
+                    </div>
+                  ) : altAI?.text ? (
+                    <>
+                      <p className="mt-4 text-slate-300 leading-relaxed">
+                        {altAI.text}
+                      </p>
+                      {altAI.tradeoff && (
+                        <div className={styles.tradeoff}>
+                          <strong>Tradeoff:</strong> {altAI.tradeoff}
+                        </div>
+                      )}
+                    </>
+                  ) : (
+                    <p className="mt-4 text-slate-300 leading-relaxed text-sm italic">
+                      {alt.camera.shortWhy}
+                    </p>
+                  )}
+                </div>
+              );
+            })}
             
             {/* If NO MATCHES */}
-            {!results.best && !results.save && !results.upgrade && (
+            {!results.best && (
               <div className="text-center p-8 bg-surface border border-border rounded-xl">
                 <h3 className="text-xl font-bold mb-2">No exact matches</h3>
-                <p className="text-text-secondary">Your must-have features combined with your budget created a requirement that no current camera fully meets. Try loosening your budget or removing a must-have.</p>
+                <p className="text-text-secondary">Your must-have features combined with your selected budget created a requirement that no current camera fully meets. Try loosening your budget or removing a must-have.</p>
               </div>
             )}
           </div>
