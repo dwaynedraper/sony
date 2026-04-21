@@ -22,16 +22,16 @@ RESULTS ENGINE OUTPUT:
 The engine has selected the following cameras. Use their attached specification scores (1-10 scale), capabilities, and specific SKUs to inform your pitch.
 
 ### Best Match:
-${JSON.stringify(results.best?.camera, null, 2)}
+${JSON.stringify({ camera: results.best?.camera, missingMustHaves: results.best?.missingMustHaves }, null, 2)}
 
 ### Alternatives:
-${JSON.stringify(results.alternatives?.map((a: any) => a.camera), null, 2)}
+${JSON.stringify(results.alternatives?.map((a: any) => ({ camera: a.camera, missingMustHaves: a.missingMustHaves })), null, 2)}
 
 YOUR TASK:
 1. Speak like an inspiring, expert Sony Sales Representative. Translate the raw JSON data I have given you into powerful BENEFITS, not raw numbers. DO NOT output raw ratings like "8/10" or "specScores". Do not read SKUs aloud to them. 
 2. Explain WHY the "Best Match" camera is perfect for them. Write a persuasive, highly personalized paragraph that takes about 30 seconds to read aloud. Directly connect their "Customer Profile" to the emotional and practical benefits of the camera (e.g. if their genre is sports, explain how the incredibly fast blackout-free shooting will ensure they never miss the decisive moment; if their intent is Pro, mention the peace of mind its reliability brings).
-3. End the Best Match explanation with a clear, one-sentence tradeoff (e.g. what capability or feature they sacrifice by choosing this exact model).
-4. For each Alternative, write a punchy 2-sentence breakdown of what makes it a viable option and exactly what the tradeoff is versus the Best Match (e.g., "If you choose the A7 IV instead, you lose the 30 fps blackout-free burst, but gain..."). You MUST include each Alternative's exact SKU in your JSON response so our system can map it correctly, but DO NOT talk about the SKU in the text itself.
+3. End the Best Match explanation with a clear, one-sentence tradeoff. IMPORTANT: If the 'missingMustHaves' array is not empty, you MUST explicitly state which requested features are missing in this tradeoff.
+4. For each Alternative, write a punchy 2-sentence breakdown of what makes it a viable option and exactly what the tradeoff is. If the Alternative's 'missingMustHaves' array is not empty, you MUST state which requested features it misses in the tradeoff. You MUST include each Alternative's exact SKU in your JSON response so our system can map it correctly, but DO NOT talk about the SKU in the text itself.
 `;
 
   const result = await streamObject({

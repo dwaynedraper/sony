@@ -57,18 +57,20 @@ export function getRecommendations(answers: AnswerState): FinalRecommendations {
   // 1. Initial Pool
   let pool = [...cameras];
 
-  // 2. Hard Exclusions based on Must-Haves
-  // Filter out any camera that does not have ALL selected must-haves.
-  pool = pool.filter(camera => {
-    for (const mustHave of answers.mustHaves) {
-      if (!camera.mustHaves.includes(mustHave)) return false;
-    }
-    return true;
-  });
-
-  // 3. Score Remaining
+  // 2. Score Remaining
   const scoredCameras = pool.map(camera => {
     let score = 0;
+
+    const missingMustHaves: import("./data/cameras").MustHave[] = [];
+    if (answers.mustHaves && answers.mustHaves.length > 0) {
+      for (const mustHave of answers.mustHaves) {
+        if (!camera.mustHaves.includes(mustHave)) {
+          missingMustHaves.push(mustHave);
+        }
+      }
+    }
+    // Severe penalty for missing constraints guarantees matches stay sorted correctly
+    score -= missingMustHaves.length * 15;
 
     if (answers.focus) {
       score += getFocusScore(camera, answers.focus) * 0.5;
@@ -136,7 +138,8 @@ export function getRecommendations(answers: AnswerState): FinalRecommendations {
       camera,
       score,
       baseScore,
-      isOverBudget: answers.budget ? tierMap[camera.tier] > tierMap[answers.budget] : false
+      isOverBudget: answers.budget ? tierMap[camera.tier] > tierMap[answers.budget] : false,
+      missingMustHaves
     };
   });
 

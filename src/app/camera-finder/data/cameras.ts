@@ -70,7 +70,7 @@ export const cameras: CameraModel[] = [
     useCases: ["vlogging", "travel"],
     skillFit: ["beginner"],
     intentFit: ["fun", "work"],
-    mustHaves: ["built_in_flash"],
+    mustHaves: [],
     shortWhy: "Easy pocket vlogging and quick social video.",
   },
   {
@@ -86,7 +86,7 @@ export const cameras: CameraModel[] = [
     useCases: ["vlogging", "travel"],
     skillFit: ["beginner", "advanced"],
     intentFit: ["fun", "work"],
-    mustHaves: ["built_in_flash"],
+    mustHaves: [],
     shortWhy: "Pocket creator camera with stronger stills flexibility than ZV-1F.",
   },
   {
@@ -102,7 +102,7 @@ export const cameras: CameraModel[] = [
     useCases: ["vlogging", "travel"],
     skillFit: ["beginner", "advanced"],
     intentFit: ["fun", "work"],
-    mustHaves: ["built_in_flash"],
+    mustHaves: [],
     shortWhy: "Wider pocket vlog framing with simple controls.",
   },
   {
@@ -182,7 +182,7 @@ export const cameras: CameraModel[] = [
     useCases: ["cinema", "all_rounder"],
     skillFit: ["advanced"],
     intentFit: ["work", "pro"],
-    mustHaves: ["log_profiles", "interchangeable_lenses"],
+    mustHaves: ["ibis", "log_profiles", "interchangeable_lenses"],
     shortWhy: "Affordable entry into Sony cinema style workflow.",
   },
   {
@@ -214,7 +214,7 @@ export const cameras: CameraModel[] = [
     useCases: ["portrait", "travel", "all_rounder"],
     skillFit: ["advanced"],
     intentFit: ["work", "pro"],
-    mustHaves: ["full_frame", "ibis", "evf", "interchangeable_lenses", "high_resolution", "high_burst"],
+    mustHaves: ["full_frame", "ibis", "evf", "log_profiles", "interchangeable_lenses", "high_resolution", "high_burst"],
     shortWhy: "High resolution and premium AF for photo-heavy creators.",
   },
   {
@@ -262,7 +262,7 @@ export const cameras: CameraModel[] = [
     useCases: ["all_rounder", "portrait", "travel"],
     skillFit: ["beginner", "advanced"],
     intentFit: ["fun", "work"],
-    mustHaves: ["full_frame", "ibis", "evf", "interchangeable_lenses", "strong_low_light"],
+    mustHaves: ["full_frame", "ibis", "evf", "log_profiles", "interchangeable_lenses", "strong_low_light"],
     shortWhy: "Great value full-frame all-rounder.",
   },
   {
@@ -310,7 +310,7 @@ export const cameras: CameraModel[] = [
     useCases: ["all_rounder", "travel", "sports", "vlogging"],
     skillFit: ["beginner", "advanced"],
     intentFit: ["fun", "work"],
-    mustHaves: ["evf", "interchangeable_lenses", "high_burst"],
+    mustHaves: ["evf", "built_in_flash", "log_profiles", "interchangeable_lenses", "high_burst"],
     shortWhy: "Value APS-C option with strong autofocus.",
   },
   {
@@ -326,7 +326,7 @@ export const cameras: CameraModel[] = [
     useCases: ["all_rounder", "travel", "vlogging"],
     skillFit: ["beginner"],
     intentFit: ["fun"],
-    mustHaves: ["interchangeable_lenses", "high_burst", "built_in_flash"],
+    mustHaves: ["evf", "built_in_flash", "interchangeable_lenses", "high_burst"],
     shortWhy: "Simple starter mirrorless camera with room to grow.",
   },
   {

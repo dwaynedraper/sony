@@ -289,6 +289,9 @@ export default function CameraFinderClient() {
                     {results.best.isOverBudget && (
                       <span className="text-red-500 font-bold mt-1">$$$ Above original budget tier</span>
                     )}
+                    {results.best.missingMustHaves && results.best.missingMustHaves.length > 0 && (
+                      <span className="text-orange-500 font-bold mt-1 text-sm tracking-wide">Missing {results.best.missingMustHaves.length} requested feature(s)</span>
+                    )}
                   </div>
                   <span className={`${styles.resultBadge} ${styles.bestBadge}`}>Best Match</span>
                 </div>
@@ -328,6 +331,9 @@ export default function CameraFinderClient() {
                       {alt.isOverBudget && (
                         <span className="text-red-500 font-bold mt-1">$$$ Above original budget tier</span>
                       )}
+                      {alt.missingMustHaves && alt.missingMustHaves.length > 0 && (
+                        <span className="text-orange-500 font-bold mt-1 text-sm tracking-wide">Missing {alt.missingMustHaves.length} requested feature(s)</span>
+                      )}
                     </div>
                     {alt.isStretchPick ? (
                       <span className={`${styles.resultBadge} ${styles.bestBadge}`} style={{ backgroundColor: '#eab308', color: '#1a1a1a' }}>Stretch Pick</span>
@@ -366,13 +372,7 @@ export default function CameraFinderClient() {
               );
             })}
             
-            {/* If NO MATCHES */}
-            {!results.best && (
-              <div className="text-center p-8 bg-surface border border-border rounded-xl">
-                <h3 className="text-xl font-bold mb-2">No exact matches</h3>
-                <p className="text-text-secondary">Your must-have features combined with your selected budget created a requirement that no current camera fully meets. Try loosening your budget or removing a must-have.</p>
-              </div>
-            )}
+
           </div>
 
           <div className={styles.restartBtn}>

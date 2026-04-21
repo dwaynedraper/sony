@@ -26,6 +26,7 @@ export interface RecommendationResult {
   camera: CameraModel;
   score: number;
   isOverBudget: boolean;
+  missingMustHaves?: MustHave[];
   isStretchPick?: boolean;
   baseScore?: number;
 }
