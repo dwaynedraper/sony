@@ -32,11 +32,17 @@ const PHOTO_GENRE_OPTIONS: { id: UseCase; label: string }[] = [
 ];
 
 const HYBRID_GENRE_OPTIONS: { id: UseCase; label: string }[] = [
-  { id: "all_rounder", label: "All-rounder mixed use" },
+  { id: "all_rounder", label: "General all-rounder mix" },
+  { id: "content_vlogging", label: "Content / vlogging" },
   { id: "travel", label: "Travel / everyday carry" },
-  { id: "content_vlogging", label: "Content / social + stills mix" },
-  { id: "weddings_events_video", label: "Weddings / events hybrid" },
-  { id: "documentary_run_gun", label: "Run-and-gun creator work" },
+  { id: "family_video", label: "Family / casual capture" },
+  { id: "weddings_events_video", label: "Weddings / events" },
+  { id: "documentary_run_gun", label: "Documentary / run-and-gun" },
+  { id: "portraits_headshots", label: "Portraits / headshots" },
+  { id: "action_sports_photo", label: "Action / sports" },
+  { id: "landscape_wildlife", label: "Landscape / wildlife" },
+  { id: "product_photo", label: "Product / commercial" },
+  { id: "real_estate_arch", label: "Real estate / architecture" },
 ];
 
 const SKILL_OPTIONS: { id: Skill; label: string }[] = [
