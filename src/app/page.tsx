@@ -48,7 +48,7 @@ export default function Home() {
         </section>
 
         {/* Customer Interaction Tools */}
-        <section className="mb-16">
+        <section className="">
           <SectionHeader title="Customer Interaction Tools" />
           <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
             <ToolCard
@@ -63,8 +63,13 @@ export default function Home() {
               href="/spec-lookup"
               icon="📊"
             />
-            
-            {/* Individual Cage Fights added directly to the grid per user request */}
+          </div>
+        </section>
+
+        {/* Cage Fights Section */}
+        <section className="mb-16">
+          <SectionHeader title="Cage Fights" />
+          <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
             {cageFights.map((fight) => (
               <CageFightCard key={fight.slug} fight={fight} />
             ))}

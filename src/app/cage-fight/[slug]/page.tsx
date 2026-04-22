@@ -3,6 +3,7 @@ import { notFound } from "next/navigation";
 import Navbar from "@/components/navbar";
 import SpecComparisonTable from "@/components/spec-comparison-table";
 import CopyPitchButton from "@/components/copy-pitch-button";
+import BackButton from "@/components/back-button";
 import { cageFights } from "@/data/cage-fights";
 
 interface PageProps {
@@ -21,15 +22,7 @@ export default async function CageFightPage({ params }: PageProps) {
     <>
       <Navbar />
       <main className="flex-1 max-w-4xl mx-auto w-full px-4 py-10">
-        <Link 
-          href="/" 
-          className="inline-flex items-center text-sm font-bold text-text-muted hover:text-accent mb-8 transition-colors"
-        >
-          <svg className="mr-2 w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M15 19l-7-7 7-7" />
-          </svg>
-          Back to Tools
-        </Link>
+        <BackButton />
 
         {/* Hero Section */}
         <div className="mb-12">
@@ -102,7 +95,7 @@ export default async function CageFightPage({ params }: PageProps) {
             </p>
             <div className="h-1 w-20 bg-accent mx-auto rounded-full mb-8" />
             <CopyPitchButton 
-              pitch={`The Sony ${fight.sonyModel} is the clear choice over the ${fight.competitorModel}. While the ${fight.competitorModel} has some social media hype, it can't compete with Sony's AI-based Real-time Tracking, 20fps blackout-free speed, twice the zoom range (200mm vs 100mm), and professional 960fps slow motion. Plus, Sony includes professional color tools like S-Log3 that the Canon lacks entirely. It's a professional tool vs a social media trend.`} 
+              pitch={fight.salesPitch} 
             />
           </div>
         </section>

@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import Navbar from "@/components/navbar";
+import BackButton from "@/components/back-button";
 import OosForm from "./oos-form";
 
 export const metadata: Metadata = {
@@ -12,6 +13,7 @@ export default function OosPage() {
     <>
       <Navbar />
       <main className="flex-1 max-w-6xl mx-auto w-full px-4 py-6">
+        <BackButton />
         <OosForm />
       </main>
     </>

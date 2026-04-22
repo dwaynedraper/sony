@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import Navbar from "@/components/navbar";
+import BackButton from "@/components/back-button";
 import CameraFinderClient from "./client";
 
 export const metadata: Metadata = {
@@ -11,7 +12,10 @@ export default function CameraFinderPage() {
   return (
     <>
       <Navbar />
-      <main className="flex-1 w-full bg-base">
+      <main className="flex-1 w-full bg-base px-4 py-6">
+        <div className="max-w-6xl mx-auto">
+          <BackButton />
+        </div>
         <CameraFinderClient />
       </main>
     </>
