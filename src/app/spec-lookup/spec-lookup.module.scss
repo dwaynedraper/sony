@@ -1,0 +1,248 @@
+@use "sass:color";
+
+$bg-base: #3a3a3a;
+$bg-surface: #4a4a4a;
+$bg-surface-hover: #555555;
+$bg-elevated: #5a5a5a;
+$text-primary: #ffffff;
+$text-secondary: #d0d0d0;
+$text-muted: #a0a0a0;
+$accent: #f5a623;
+$border-default: #5a5a5a;
+$border-light: #6a6a6a;
+$radius-md: 10px;
+$radius-sm: 6px;
+
+.container {
+  max-width: 1200px;
+  margin: 0 auto;
+  padding: 2rem 1rem;
+}
+
+.header {
+  margin-bottom: 2rem;
+}
+
+.title {
+  font-size: 2rem;
+  font-weight: 800;
+  color: $text-primary;
+  letter-spacing: -0.02em;
+}
+
+.description {
+  margin-top: 0.5rem;
+  color: $text-secondary;
+}
+
+.tableContainer {
+  position: relative;
+  overflow: auto;
+  max-height: 75vh;
+  background: $bg-surface;
+  border: 1px solid $border-default;
+  border-radius: $radius-md;
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.4);
+  
+  /* Smooth scrollbar */
+  &::-webkit-scrollbar {
+    width: 10px;
+    height: 10px;
+  }
+  &::-webkit-scrollbar-track {
+    background: darken($bg-base, 5%);
+  }
+  &::-webkit-scrollbar-thumb {
+    background: $bg-elevated;
+    border: 2px solid darken($bg-base, 5%);
+    border-radius: 5px;
+    &:hover {
+      background: $border-light;
+    }
+  }
+}
+
+.table {
+  width: 100%;
+  border-collapse: separate;
+  border-spacing: 0;
+  font-size: 0.875rem;
+}
+
+/* Sticky Headers */
+.thead {
+  position: sticky;
+  top: 0;
+  z-index: 30;
+  background: $bg-elevated;
+}
+
+.headerRow {
+  background: inherit;
+}
+
+.th {
+  padding: 1rem;
+  text-align: left;
+  font-weight: 700;
+  color: $text-primary;
+  border-bottom: 2px solid $border-default;
+  white-space: nowrap;
+  background: inherit;
+  cursor: pointer;
+  user-select: none;
+  transition: color 0.1s;
+
+  &:hover {
+    color: $accent;
+  }
+
+  &.active {
+    color: $accent;
+    border-bottom-color: $accent;
+  }
+}
+
+.sortIcon {
+  display: inline-flex;
+  margin-left: 0.5rem;
+  font-size: 0.7rem;
+  opacity: 0.5;
+  vertical-align: middle;
+
+  &.active {
+    opacity: 1;
+    color: $accent;
+  }
+}
+
+/* Filter Input Row */
+.filterRow {
+  background: lighten($bg-elevated, 5%);
+  z-index: 29;
+}
+
+.filterInput {
+  width: 100%;
+  padding: 0.5rem;
+  background: $bg-base;
+  border: 1px solid $border-default;
+  border-radius: $radius-sm;
+  color: $text-primary;
+  font-size: 0.75rem;
+  outline: none;
+  transition: border-color 0.1s;
+
+  &:focus {
+    border-color: $accent;
+  }
+
+  &::placeholder {
+    color: $text-muted;
+    font-size: 0.7rem;
+  }
+}
+
+/* Sticky Left Column (Name) */
+.stickyCol {
+  position: sticky;
+  left: 0;
+  z-index: 20;
+  background: $bg-surface;
+  border-right: 2px solid $border-default;
+  
+  &::after {
+    content: '';
+    position: absolute;
+    top: 0;
+    right: -5px;
+    width: 5px;
+    height: 100%;
+    background: linear-gradient(to right, rgba(0,0,0,0.2), transparent);
+    pointer-events: none;
+  }
+}
+
+/* Sticky Corner Cell (Top Left) */
+.stickyCorner {
+  z-index: 40;
+  background: $bg-elevated;
+}
+
+.td {
+  padding: 0.875rem 1rem;
+  border-bottom: 1px solid rgba($border-default, 0.5);
+  color: $text-secondary;
+  white-space: nowrap;
+  
+  &.failed {
+    background-color: rgba(#ef5350, 0.15) !important;
+    color: #ff8a80;
+  }
+}
+
+.trSelection {
+  background: inherit;
+  transition: background 0.1s;
+  
+  &:hover {
+    background: rgba($text-primary, 0.05);
+  }
+}
+
+.videoFilterWrapper {
+  display: flex;
+  align-items: center;
+  gap: 0.25rem;
+  font-size: 0.75rem;
+  color: $text-muted;
+  white-space: nowrap;
+}
+
+.videoInput {
+  width: 3rem !important;
+  text-align: center;
+  padding: 0.5rem 0.25rem !important;
+}
+
+.nameCell {
+  font-weight: 700;
+  color: $text-primary;
+  background: inherit;
+}
+
+.activeName {
+  color: $accent;
+}
+
+.sku {
+  display: block;
+  font-size: 0.7rem;
+  color: $text-muted;
+  font-weight: 400;
+}
+
+.badge {
+  display: inline-block;
+  padding: 0.2rem 0.5rem;
+  border-radius: 4px;
+  font-size: 0.7rem;
+  font-weight: 800;
+  text-transform: uppercase;
+  
+  &.yes {
+    background: rgba(#4caf50, 0.2);
+    color: #81c784;
+  }
+  &.no {
+    background: rgba(#ef5350, 0.2);
+    color: #e57373;
+  }
+}
+
+.resultsCount {
+  margin-bottom: 1rem;
+  font-size: 0.8125rem;
+  color: $text-muted;
+  font-weight: 600;
+}

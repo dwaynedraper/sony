@@ -38,6 +38,13 @@ export default function Home() {
             badge={{ text: "Experimental", colorClass: "text-red-500" }}
             disclaimer="* Still under development. Use your professional judgement, results may not be perfect."
           />
+
+          <ToolCard
+            title="Spec Filter"
+            description="A tool for quickly finding cameras by exact spec instead of use case."
+            href="/spec-lookup"
+            icon="📊"
+          />
         </div>
       </main>
     </>
