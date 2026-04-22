@@ -96,7 +96,7 @@ export const cageFights: CageFight[] = [
       }
     ],
     verdict: "The G7X III is a 'vibe' camera for influencers who stay in Auto mode. The RX100 VII is a professional tool that fits in a pocket. For anyone who cares about their photos actually being in focus or wants to shoot from a distance, the Sony is the only choice.",
-    salesPitch: "The Sony RX100 VII is the clear choice over the G7X III. While the Canon has some social media hype, it can't compete with Sony's AI-based Real-time Tracking, 20fps blackout-free speed, twice the zoom range (200mm vs 100mm), and professional 960fps slow motion. It's a professional tool vs a social media trend."
+    salesPitch: "The Sony RX100 VII features 357 phase-detect AF points with Real-time Tracking, blackout-free 20fps shooting, and an 8.3x zoom range. While the G7X III is popular for its specific flash aesthetic, the Sony provides twice the zoom reach and significantly more reliable autofocus for both stills and 4K video."
   },
   {
     slug: "a7v-vs-r6iii",
@@ -151,7 +151,7 @@ export const cageFights: CageFight[] = [
       }
     ],
     verdict: "Canon wins the 'spec sheet' war on video resolution, but Sony wins the 'real world' war on usability. With the AI chip and the partially stacked sensor, the A7 V is a more reliable tool for professionals who can't afford to miss a shot.",
-    salesPitch: "The Sony A7 V outclasses the R6 III where it counts. Sony's partially stacked sensor eliminates rolling shutter, the dedicated AI chip makes focus 'magnetic', and the level of customization allows you to work faster. Plus, the E-mount ecosystem gives you 3x more lens choices at better prices."
+    salesPitch: "The Sony A7 V utilizes a partially stacked 33MP sensor to reduce rolling shutter and includes a dedicated AI processing chip for subject tracking. It features 12+ customizable buttons and an open E-mount ecosystem with 3x more lens options than Canon. While Canon supports Open Gate, Sony's AI-driven focus and faster sensor readout offer a more reliable hybrid workflow."
   },
   {
     slug: "fx30-vs-nikon-zr",
@@ -213,6 +213,6 @@ export const cageFights: CageFight[] = [
       }
     ],
     verdict: "The Nikon ZR is a shiny new toy with a RED badge, but the FX30 is a professional tool. For a filmmaker who needs a camera that works every single time, doesn't overheat, and rigs up in seconds, Sony is the only logical choice.",
-    salesPitch: "Don't get distracted by the RED logo on the Nikon ZR. The Sony FX30 is a battle-tested cinema camera with active cooling, built-in rigging points, and a professional grip. The Nikon ZR is a flat box that's a nightmare to hold without an expensive cage. Reliability and ergonomics beat a brand name every time."
+    salesPitch: "The Sony FX30 is a dedicated cinema camera with an internal cooling fan for unlimited recording, built-in rigging points, and a standard Super 35 sensor. The Nikon ZR offers full-frame and RED codecs but lacks active cooling, tally lights, and an ergonomic grip, making the Sony the more reliable choice for continuous professional production."
   }
 ];

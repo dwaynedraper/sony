@@ -2,7 +2,6 @@ import Link from "next/link";
 import { notFound } from "next/navigation";
 import Navbar from "@/components/navbar";
 import SpecComparisonTable from "@/components/spec-comparison-table";
-import CopyPitchButton from "@/components/copy-pitch-button";
 import BackButton from "@/components/back-button";
 import { cageFights } from "@/data/cage-fights";
 
@@ -83,22 +82,45 @@ export default async function CageFightPage({ params }: PageProps) {
           />
         </section>
 
-        {/* Verdict */}
+        {/* Spoken Sales Pitch */}
         <section className="bg-gradient-to-br from-surface to-surface-hover border border-accent/30 rounded-2xl p-8 shadow-2xl relative overflow-hidden">
-          {/* Sony Logo Accent or Symbol */}
           <div className="absolute -bottom-10 -right-10 w-40 h-40 bg-accent/10 rounded-full blur-3xl" />
           
-          <div className="relative z-10 text-center max-w-2xl mx-auto">
-            <h2 className="text-2xl font-black uppercase tracking-[0.2em] text-accent mb-6">The Verdict</h2>
-            <p className="text-lg text-foreground font-bold leading-relaxed mb-8 italic">
-              "{fight.verdict}"
-            </p>
-            <div className="h-1 w-20 bg-accent mx-auto rounded-full mb-8" />
-            <CopyPitchButton 
-              pitch={fight.salesPitch} 
-            />
+          <div className="relative z-10">
+            <div className="flex items-center gap-4 mb-6">
+              <div className="w-12 h-12 rounded-xl bg-accent/20 flex items-center justify-center text-xl shadow-inner">
+                🎙️
+              </div>
+              <div>
+                <h2 className="text-xl font-black uppercase tracking-[0.2em] text-accent leading-none">Spoken Sales Pitch</h2>
+                <p className="text-[0.65rem] font-bold text-text-muted uppercase tracking-widest mt-1">10–20 Second Factual Script</p>
+              </div>
+            </div>
+            
+            <div className="bg-background/40 backdrop-blur-sm border border-border/50 rounded-xl p-6 relative">
+              <div className="absolute top-0 left-0 w-1 h-full bg-accent rounded-full" />
+              <p className="text-lg text-foreground font-bold leading-relaxed italic">
+                "{fight.salesPitch}"
+              </p>
+            </div>
+
+            <div className="mt-8 flex flex-col sm:flex-row items-center justify-between gap-4 pt-6 border-t border-border/50">
+              <div className="text-[0.7rem] text-text-muted italic max-w-md">
+                Focus on these factual points if the customer asks for a direct comparison breakdown.
+              </div>
+              <div className="px-4 py-2 bg-surface border border-border rounded-lg text-[0.6rem] font-black uppercase tracking-widest text-text-secondary">
+                Internal Sales Reference
+              </div>
+            </div>
           </div>
         </section>
+
+        {/* Final Verdict (Small Footer) */}
+        <div className="mt-12 text-center">
+          <p className="text-xs text-text-muted font-medium">
+            Professional Sales Reference • Internal Use Only
+          </p>
+        </div>
       </main>
     </>
   );
