@@ -55,7 +55,7 @@ export const cameraSpecs: CameraSpec[] = [
   },
   {
     name: "A7R V",
-    sku: "ILCE-7RM5",
+    sku: "ILCE-7RM5/B",
     mp: 61.0,
     sensorSize: "Full Frame",
     fps: 10,
@@ -67,7 +67,7 @@ export const cameraSpecs: CameraSpec[] = [
   },
   {
     name: "A7S III",
-    sku: "ILCE-7SM3",
+    sku: "ILCE-7SM3/B",
     mp: 12.1,
     sensorSize: "Full Frame",
     fps: 10,
@@ -82,15 +82,15 @@ export const cameraSpecs: CameraSpec[] = [
     sku: "ILCE-7M5/B",
     mp: 33.0,
     sensorSize: "Full Frame",
-    fps: 15,
+    fps: 30,
     weatherSealed: true,
-    ibisStops: 7.0,
+    ibisStops: 7.5,
     video8kFps: 0,
-    video4kFps: 60,
+    video4kFps: 120,
     bitDepth: "10-bit",
   },
   {
-    name: "A7 IV Body",
+    name: "A7 IV",
     sku: "ILCE-7M4/B",
     mp: 33.0,
     sensorSize: "Full Frame",
@@ -126,7 +126,7 @@ export const cameraSpecs: CameraSpec[] = [
     bitDepth: "8-bit",
   },
   {
-    name: "FX3A",
+    name: "FX3",
     sku: "ILME-FX3A",
     mp: 12.1,
     sensorSize: "Full Frame",
@@ -138,7 +138,7 @@ export const cameraSpecs: CameraSpec[] = [
     bitDepth: "10-bit",
   },
   {
-    name: "FX30 Body",
+    name: "FX30",
     sku: "ILME-FX30B",
     mp: 26.0,
     sensorSize: "APS-C",
@@ -238,7 +238,7 @@ export const cameraSpecs: CameraSpec[] = [
     sku: "ZV1F/B",
     mp: 20.1,
     sensorSize: "1-inch",
-    fps: 24,
+    fps: 16,
     weatherSealed: false,
     ibisStops: 0,
     video8kFps: 0,
@@ -260,7 +260,7 @@ export const cameraSpecs: CameraSpec[] = [
   {
     name: "FX2",
     sku: "ILME-FX2B",
-    mp: 24.0,
+    mp: 33.0,
     sensorSize: "Full Frame",
     fps: 10,
     weatherSealed: true,
@@ -268,5 +268,5 @@ export const cameraSpecs: CameraSpec[] = [
     video8kFps: 0,
     video4kFps: 60,
     bitDepth: "10-bit",
-  },
+  }
 ];
