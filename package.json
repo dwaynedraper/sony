@@ -14,9 +14,12 @@
     "@ai-sdk/react": "^3.0.170",
     "@vercel/analytics": "^2.0.1",
     "ai": "^6.0.168",
+    "jose": "^6.2.2",
+    "mongodb": "^7.2.0",
     "next": "16.2.4",
     "react": "19.2.4",
     "react-dom": "19.2.4",
+    "resend": "^6.12.2",
     "zod": "^4.3.6"
   },
   "devDependencies": {

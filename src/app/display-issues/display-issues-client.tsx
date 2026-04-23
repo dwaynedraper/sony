@@ -36,66 +36,55 @@ export default function DisplayIssuesClient() {
     setStores(getStoreList());
   }, []);
 
-  // ── Mount: load stores, attempt geolocation ─────────────────────────────
+  // ── Mount: load stores from cloud ────────────────────────────────────────
   useEffect(() => {
-    const storeList = getStoreList();
-    // eslint-disable-next-line react-hooks/set-state-in-effect
-    setStores(storeList);
+    let active = true;
+    
+    async function load() {
+      const { syncFromCloud } = await import("@/lib/store-storage");
+      await syncFromCloud();
+      if (!active) return;
 
-    const saved = getActiveStore();
-    const locateParam = searchParams.get("locate");
-
-    // If we have stores with lat/lng and user hasn't denied geo, try auto-select
-    const storesWithGeo = storeList.filter(
-      (s) => s.lat != null && s.lng != null
-    );
-
-    if (locateParam === "true" && storesWithGeo.length > 0 && !isGeoDenied() && navigator.geolocation) {
-      navigator.geolocation.getCurrentPosition(
-        (pos) => {
-          const nearest = findNearestStore(
-            pos.coords.latitude,
-            pos.coords.longitude,
-            storesWithGeo
-          );
-          if (nearest) {
-            setActiveStore(nearest.id);
-            setActiveId(nearest.id);
-          } else if (saved && storeList.some((s) => s.id === saved)) {
-            setActiveId(saved);
-          } else if (storeList.length > 0) {
-            setActiveStore(storeList[0].id);
-            setActiveId(storeList[0].id);
-          }
-          if (locateParam) router.replace(pathname);
-          setMounted(true);
-        },
-        () => {
-          // Denied or error — remember preference, fall back
-          setGeoDenied(true);
-          if (saved && storeList.some((s) => s.id === saved)) {
-            setActiveId(saved);
-          } else if (storeList.length > 0) {
-            setActiveStore(storeList[0].id);
-            setActiveId(storeList[0].id);
-          }
-          if (locateParam) router.replace(pathname);
-          setMounted(true);
-        },
-        { timeout: 5000, maximumAge: 60000 }
-      );
-    } else {
-      // No geo-eligible stores or geo denied — fall back
-      if (saved && storeList.some((s) => s.id === saved)) {
+      const list = getStoreList();
+      setStores(list);
+      
+      const saved = getActiveStore();
+      if (saved && list.some(s => s.id === saved)) {
         setActiveId(saved);
-      } else if (storeList.length > 0) {
-        setActiveStore(storeList[0].id);
-        setActiveId(storeList[0].id);
+      } else if (list.length > 0) {
+        setActiveId(list[0].id);
       }
-      if (locateParam) router.replace(pathname);
       setMounted(true);
     }
-  }, [searchParams, pathname, router]);
+
+    load();
+    return () => { active = false; };
+  }, []);
+
+  // ── Geolocation: only if ?locate=true ────────────────────────────────────
+  useEffect(() => {
+    if (!mounted || searchParams.get("locate") !== "true") return;
+
+    if (navigator.geolocation && !isGeoDenied()) {
+      navigator.geolocation.getCurrentPosition(
+        (pos) => {
+          const nearest = findNearestStore(pos.coords.latitude, pos.coords.longitude, stores);
+          if (nearest) {
+            handleSelectStore(nearest.id);
+          }
+          router.replace(pathname);
+        },
+        () => {
+          setGeoDenied(true);
+          router.replace(pathname);
+        }
+      );
+    } else {
+      router.replace(pathname);
+    }
+  }, [mounted, searchParams, pathname, router, stores]);
+
+
 
   // ── Handlers ────────────────────────────────────────────────────────────
 

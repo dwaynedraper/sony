@@ -260,11 +260,11 @@ export default function CameraFinderClient() {
           {state.step > 1 ? (
             <button className={styles.btnSecondary} onClick={prevStep}>Back</button>
           ) : (
-            <div></div> // Spacer
+            <div />
           )}
-          
-          <div style={{ flex: 1 }}></div> // Flexible spacer
-          
+
+          <div style={{ flex: 1 }} />
+
           {state.step === 7 && (
             <button className={styles.btnPrimary} onClick={nextStep}>
               Continue

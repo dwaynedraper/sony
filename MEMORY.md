@@ -1,0 +1,3 @@
+- [User role & context](user_role.md) — solo dev covering 3 BBUY stores; sole user of the app; uses Antigravity as IDE.
+- [Docs & stack prefs](feedback_docs_and_stack.md) — create production-helping docs freely; use `mongodb` driver, not Mongoose.
+- [OpenAI model names](reference_openai_models.md) — `gpt-5.x-*` names are real per OpenAI docs; don't flag as typos.

@@ -19,6 +19,8 @@ export const metadata: Metadata = {
 };
 
 import { Analytics } from "@vercel/analytics/react";
+import AuthMigration from "@/components/auth-migration";
+import Navbar from "@/components/navbar";
 
 export default function RootLayout({
   children,
@@ -31,7 +33,9 @@ export default function RootLayout({
       className={`${geistSans.variable} ${geistMono.variable} h-full antialiased`}
     >
       <body className="min-h-full flex flex-col">
+        <Navbar />
         {children}
+        <AuthMigration />
         <Analytics />
       </body>
     </html>

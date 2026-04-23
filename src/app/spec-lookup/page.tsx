@@ -11,7 +11,6 @@ export const metadata: Metadata = {
 export default function SpecLookupPage() {
   return (
     <>
-      <Navbar />
       <main className="min-h-screen bg-background px-4 py-6">
         <div className="max-w-6xl mx-auto">
           <BackButton />

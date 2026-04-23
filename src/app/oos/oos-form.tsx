@@ -32,6 +32,46 @@ export default function OosForm() {
   const [modal, setModal] = useState<ModalState | null>(null);
   const [output, setOutput] = useState("");
   const [copied, setCopied] = useState(false);
+  const [loading, setLoading] = useState(true);
+
+  // ─── Cloud Persistence ───────────────────────────────────────────────────
+
+  // Load from cloud on mount
+  useEffect(() => {
+    async function load() {
+      try {
+        const res = await fetch("/api/oos");
+        if (res.ok) {
+          const data = await res.json();
+          setChecked(data);
+        }
+      } catch (err) {
+        console.error("Failed to load OOS state:", err);
+      } finally {
+        setLoading(false);
+      }
+    }
+    load();
+  }, []);
+
+  // Save to cloud when checked map changes
+  useEffect(() => {
+    if (loading) return;
+
+    const timer = setTimeout(async () => {
+      try {
+        await fetch("/api/oos", {
+          method: "PUT",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify(checked),
+        });
+      } catch (err) {
+        console.error("Failed to save OOS state:", err);
+      }
+    }, 1000); // Debounce saves by 1s
+
+    return () => clearTimeout(timer);
+  }, [checked, loading]);
 
   // Build a unique key for each option
   const optionKey = (sectionId: string, slotIdx: number, optIdx: number) =>
@@ -216,6 +256,16 @@ export default function OosForm() {
   );
 
   // ─── JSX ──────────────────────────────────────────────────────────────────
+
+  // ─── Render ──────────────────────────────────────────────────────────────
+  
+  if (loading) {
+    return (
+      <div className="flex-1 flex items-center justify-center min-h-[400px]">
+        <div className="text-text-secondary animate-pulse text-sm">Loading current stock status...</div>
+      </div>
+    );
+  }
 
   return (
     <div className={styles.wrapper}>

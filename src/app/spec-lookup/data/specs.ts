@@ -45,7 +45,7 @@ export const cameraSpecs: CameraSpec[] = [
     name: "A9 III",
     sku: "ILCE-9M3",
     mp: 24.6,
-    sensorSize: "Full Frame (Global)",
+    sensorSize: "Full Frame",
     fps: 120,
     weatherSealed: true,
     ibisStops: 8.0,

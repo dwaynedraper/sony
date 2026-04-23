@@ -42,7 +42,7 @@ This document outlines the purpose of every major file and directory to help AI 
 │   │   └── tool-card.tsx                 # Reusable dashboard UI card for the homepage
 │   │
 │   ├── data/
-│   │   ├── camera-list.ts                # (Deprecating/Static) Basic array of camera strings
+│   │   ├── camera-list.ts                # Canonical flat list of display cameras + section grouping
 │   │   └── display-slots.ts              # Master definition of which SKU sits in which slot per store format
 │   │
 │   └── lib/

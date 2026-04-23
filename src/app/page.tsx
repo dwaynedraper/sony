@@ -1,4 +1,3 @@
-import Navbar from "@/components/navbar";
 import ToolCard from "@/components/tool-card";
 import CageFightCard from "@/components/cage-fight-card";
 import { cageFights } from "@/data/cage-fights";
@@ -17,7 +16,6 @@ function SectionHeader({ title }: { title: string }) {
 export default function Home() {
   return (
     <>
-      <Navbar />
       <main className="flex-1 max-w-6xl mx-auto w-full px-4 py-10">
         <div className="mb-12">
           <h1 className="text-4xl font-black text-foreground tracking-tighter">

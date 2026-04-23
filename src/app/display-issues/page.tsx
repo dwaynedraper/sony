@@ -12,7 +12,6 @@ export const metadata: Metadata = {
 export default function DisplayIssuesPage() {
   return (
     <>
-      <Navbar />
       <main className="flex-1 max-w-6xl mx-auto w-full px-4 py-6">
         <BackButton />
         <Suspense fallback={null}>

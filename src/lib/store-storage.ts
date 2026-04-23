@@ -93,6 +93,59 @@ if (typeof window !== "undefined") {
   migrateIfNeeded();
 }
 
+// ─── Cloud Sync ─────────────────────────────────────────────────────────────
+
+/** Trigger a background sync to the cloud. */
+async function cloudSync(url: string, method: string, body?: any) {
+  try {
+    const res = await fetch(url, {
+      method,
+      headers: { "Content-Type": "application/json" },
+      body: body ? JSON.stringify(body) : undefined,
+    });
+    if (!res.ok) console.warn(`Cloud sync failed: ${res.statusText}`);
+  } catch (err) {
+    console.error("Cloud sync network error:", err);
+  }
+}
+
+/** Sync all stores and issues from the cloud to localStorage. */
+export async function syncFromCloud(): Promise<void> {
+  if (typeof window === "undefined") return;
+  try {
+    const [storesRes, oosRes] = await Promise.all([
+      fetch("/api/stores"),
+      fetch("/api/oos"),
+    ]);
+
+    if (storesRes.ok) {
+      const stores = await storesRes.json();
+      localStorage.setItem(STORES_KEY, JSON.stringify(stores));
+      
+      // Fetch issues for each store
+      for (const store of stores) {
+        const issuesRes = await fetch(`/api/stores/${store.id}/issues`);
+        if (issuesRes.ok) {
+          const issues = await issuesRes.json();
+          localStorage.setItem(ISSUES_PREFIX + store.id, JSON.stringify({ cameras: issues }));
+        }
+      }
+    }
+  } catch (err) {
+    console.error("Failed to sync from cloud:", err);
+  }
+}
+
+/** Export all local data for migration. */
+export function getMigrationData() {
+  const stores = getStoreList();
+  const issues: Record<string, StoreIssueData> = {};
+  for (const s of stores) {
+    issues[s.id] = getStoreIssues(s.id);
+  }
+  return { stores, issues };
+}
+
 // ─── Store Management ───────────────────────────────────────────────────────
 
 export function getStoreList(): StoreInfo[] {
@@ -124,6 +177,7 @@ export function addStore(info: StoreInfo): void {
   if (!list.some((s) => s.id === info.id)) {
     list.push(info);
     localStorage.setItem(STORES_KEY, JSON.stringify(list));
+    cloudSync("/api/stores", "POST", info);
   }
 }
 
@@ -136,12 +190,14 @@ export function updateStoreInfo(info: StoreInfo): void {
     list.push(info);
   }
   localStorage.setItem(STORES_KEY, JSON.stringify(list));
+  cloudSync("/api/stores", "POST", info);
 }
 
 export function removeStore(id: string): void {
   const list = getStoreList().filter((s) => s.id !== id);
   localStorage.setItem(STORES_KEY, JSON.stringify(list));
   localStorage.removeItem(ISSUES_PREFIX + id);
+  cloudSync(`/api/stores/${id}`, "DELETE");
 
   // If we removed the active store, clear it
   if (getActiveStore() === id) {
@@ -187,6 +243,7 @@ export function getStoreIssues(storeId: string): StoreIssueData {
 
 export function saveStoreIssues(storeId: string, data: StoreIssueData): void {
   localStorage.setItem(ISSUES_PREFIX + storeId, JSON.stringify(data));
+  cloudSync(`/api/stores/${storeId}/issues`, "PUT", data.cameras);
 }
 
 export function getCameraIssues(
@@ -219,6 +276,7 @@ export function clearCameraIssues(
   delete data.cameras[cameraName];
   saveStoreIssues(storeId, data);
 }
+
 
 // ─── Geolocation Helpers ────────────────────────────────────────────────────
 

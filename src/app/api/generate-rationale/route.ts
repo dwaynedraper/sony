@@ -1,11 +1,64 @@
 import { openai } from '@ai-sdk/openai';
 import { streamObject } from 'ai';
 import { z } from 'zod';
+import { getSession } from '@/lib/dal';
 
 export const maxDuration = 30;
 
+interface Answers {
+  skill?: string;
+  intent?: string;
+  focus?: string;
+  useCase?: string;
+  formFactor?: string;
+  mustHaves?: string[];
+}
+
+interface RankedCamera {
+  camera: { sku: string; name: string };
+  missingMustHaves?: string[];
+}
+
+interface EngineResults {
+  best?: RankedCamera;
+  alternatives?: RankedCamera[];
+}
+
 export async function POST(req: Request) {
-  const { answers, results } = await req.json();
+  const session = await getSession();
+  if (!session) {
+    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  }
+
+  // ─── Rate Limiting ───────────────────────────────────────────────────────
+  const db = await getDb();
+  const now = new Date();
+  const oneHourAgo = new Date(now.getTime() - 60 * 60 * 1000);
+
+  // Count requests in the last hour for this user
+  const requestCount = await db.collection("aiUsage").countDocuments({
+    userId: session.userId,
+    timestamp: { $gt: oneHourAgo },
+  });
+
+  if (requestCount >= 20) {
+    return NextResponse.json(
+      { error: "Rate limit exceeded. Please try again in an hour." },
+      { status: 429 }
+    );
+  }
+
+  // Record this request
+  await db.collection("aiUsage").insertOne({
+    userId: session.userId,
+    timestamp: now,
+  });
+
+  // ─── Original Logic ──────────────────────────────────────────────────────
+  const { answers, results } = (await req.json()) as {
+    answers: Answers;
+    results: EngineResults;
+  };
 
   const prompt = `
 You are an expert Sony Camera Representative. A customer has just completed a questionnaire to find their perfect camera.
@@ -25,7 +78,7 @@ The engine has selected the following cameras. Use their attached specification 
 ${JSON.stringify({ camera: results.best?.camera, missingMustHaves: results.best?.missingMustHaves }, null, 2)}
 
 ### Alternatives:
-${JSON.stringify(results.alternatives?.map((a: any) => ({ camera: a.camera, missingMustHaves: a.missingMustHaves })), null, 2)}
+${JSON.stringify(results.alternatives?.map((a) => ({ camera: a.camera, missingMustHaves: a.missingMustHaves })), null, 2)}
 
 YOUR TASK:
 1. Speak like an inspiring, expert Sony Sales Representative. Translate the raw JSON data I have given you into powerful BENEFITS, not raw numbers. DO NOT output raw ratings like "8/10" or "specScores". Do not read SKUs aloud to them. 
