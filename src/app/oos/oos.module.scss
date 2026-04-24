@@ -152,7 +152,7 @@ $lens-border: #a77bca;   // soft purple for lens/accessory cards
 
 .slotCardActive {
   border-color: $accent;
-  background: rgba($accent, 0.08);
+  background: color.change($accent, $alpha: 0.08);
 
   &.slotCardCamera {
     border-left-color: $accent;
@@ -414,7 +414,7 @@ $lens-border: #a77bca;   // soft purple for lens/accessory cards
   align-items: center;
   gap: 0.875rem;
   padding: 0.875rem 0;
-  border-bottom: 1px solid rgba($border-default, 0.5);
+  border-bottom: 1px solid color.change($border-default, $alpha: 0.5);
   cursor: pointer;
   -webkit-tap-highlight-color: transparent;
   min-height: 52px; // 44px+ tap target

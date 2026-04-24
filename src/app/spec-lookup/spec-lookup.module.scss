@@ -50,11 +50,11 @@ $radius-sm: 6px;
     height: 10px;
   }
   &::-webkit-scrollbar-track {
-    background: darken($bg-base, 5%);
+    background: color.adjust($bg-base, $lightness: -5%);
   }
   &::-webkit-scrollbar-thumb {
     background: $bg-elevated;
-    border: 2px solid darken($bg-base, 5%);
+    border: 2px solid color.adjust($bg-base, $lightness: -5%);
     border-radius: 5px;
     &:hover {
       background: $border-light;
@@ -118,7 +118,7 @@ $radius-sm: 6px;
 
 /* Filter Input Row */
 .filterRow {
-  background: lighten($bg-elevated, 5%);
+  background: color.adjust($bg-elevated, $lightness: 5%);
   z-index: 29;
 }
 
@@ -171,7 +171,7 @@ $radius-sm: 6px;
 
 .td {
   padding: 0.875rem 1rem;
-  border-bottom: 1px solid rgba($border-default, 0.5);
+  border-bottom: 1px solid color.change($border-default, $alpha: 0.5);
   color: $text-secondary;
   white-space: nowrap;
   
@@ -186,7 +186,7 @@ $radius-sm: 6px;
   transition: background 0.1s;
   
   &:hover {
-    background: rgba($text-primary, 0.05);
+    background: color.change($text-primary, $alpha: 0.05);
   }
 }
 
@@ -231,11 +231,11 @@ $radius-sm: 6px;
   text-transform: uppercase;
   
   &.yes {
-    background: rgba(#4caf50, 0.2);
+    background: color.change(#4caf50, $alpha: 0.2);
     color: #81c784;
   }
   &.no {
-    background: rgba(#ef5350, 0.2);
+    background: color.change(#ef5350, $alpha: 0.2);
     color: #e57373;
   }
 }
