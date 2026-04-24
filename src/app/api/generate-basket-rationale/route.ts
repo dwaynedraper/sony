@@ -50,7 +50,6 @@ If it's an SD card or battery, mention reliability and not missing the moment.`;
     const { text } = await generateText({
       model: openai(process.env.OPENAI_MODEL || "gpt-5.4-nano"),
       prompt,
-      maxTokens: 60,
       temperature: 0.7,
     });
 

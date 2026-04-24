@@ -1,6 +1,5 @@
 import { NextResponse } from "next/server";
 import { getDb } from "@/lib/db";
-import { requireSession } from "@/lib/dal";
 
 export async function GET() {
   const db = await getDb();
@@ -19,7 +18,7 @@ export async function GET() {
     const cameras = issuesDoc?.cameras || {};
     
     // Count total issues
-    const issueCount = Object.values(cameras).reduce((acc, issues: any) => {
+    const issueCount = Object.values(cameras).reduce((acc: number, issues: any) => {
       let count = 0;
       if (issues.alarm) count++;
       if (issues.noPower) count++;

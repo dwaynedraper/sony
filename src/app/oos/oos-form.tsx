@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useCallback } from "react";
+import { useState, useCallback, useEffect } from "react";
 import { cameraDisplay, lensTotem } from "@/data/display-slots";
 import type { DisplaySlot, DisplaySection } from "@/data/display-slots";
 import styles from "./oos.module.scss";

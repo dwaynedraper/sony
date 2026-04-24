@@ -1,7 +1,9 @@
+import { NextResponse } from 'next/server';
 import { openai } from '@ai-sdk/openai';
 import { streamObject } from 'ai';
 import { z } from 'zod';
 import { getSession } from '@/lib/dal';
+import { getDb } from '@/lib/db';
 
 export const maxDuration = 30;
 
