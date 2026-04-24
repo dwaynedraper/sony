@@ -42,6 +42,12 @@ export default function Home() {
               href="/display-issues?locate=true"
               icon="⚠️"
             />
+            <ToolCard
+              title="Basket Builder"
+              description="Build a complete equipment package based on a customer's specific photography goals."
+              href="/basket-builder"
+              icon="🛒"
+            />
           </div>
         </section>
 
