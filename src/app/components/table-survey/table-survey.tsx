@@ -6,6 +6,7 @@ import {
   normalizeLayout,
   newId,
   parseLensName,
+  collectIds,
   CATEGORY_LABELS,
   type TableLayout,
   type TableSection,
@@ -31,6 +32,7 @@ import {
   getIssues,
   saveIssues,
   buildCatalog,
+  clearDeviceData,
   CATEGORIES,
   type CatalogEntry,
   fetchStores,
@@ -193,39 +195,78 @@ export default function TableSurvey({ mode: initialMode }: { mode: Mode }) {
     })();
 
     return () => { cancelled = true; };
+    // Mount-only bootstrap. `loadStore` is intentionally omitted: including it
+    // would re-run the whole store load on every render.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
+
+  /**
+   * Drop marks that don't point at anything real. A stock key that matches no
+   * item — a swapped-out product, or a key written before stable IDs existed —
+   * is dead weight: it can't be seen or cleared, but it WOULD be counted.
+   */
+  function pruneToLayout(l: TableLayout, s: StockMap, i: IssuesMap) {
+    const { itemIds, slotIds } = collectIds(l);
+    const stockOut: StockMap = {};
+    for (const k of Object.keys(s)) if (itemIds.has(k)) stockOut[k] = true;
+    const issuesOut: IssuesMap = {};
+    for (const k of Object.keys(i)) if (slotIds.has(k)) issuesOut[k] = i[k];
+    const dropped =
+      Object.keys(s).length - Object.keys(stockOut).length +
+      (Object.keys(i).length - Object.keys(issuesOut).length);
+    return { stock: stockOut, issues: issuesOut, dropped };
+  }
 
   /** Show cached data instantly, then reconcile with the cloud (cloud wins). */
   async function loadStore(ref: StoreRef) {
     setActiveStore(ref);
     pushStore(ref);
     setStore(ref);
-    setLayout(getLayout(ref.number));
-    setStock(getStock(ref.number));
-    setIssues(getIssues(ref.number));
     setDone({ left: false, center: false, right: false, totem: false });
     setView("overview");
     setShowPicker(false);
     setPickerView("menu");
     setKnownStores(getKnownStores());
 
+    // 1. Cached copy, instantly. Prune for display but don't persist yet —
+    //    the cloud may still have the truth.
+    let l = getLayout(ref.number);
+    const cached = pruneToLayout(l, getStock(ref.number), getIssues(ref.number));
+    setLayout(l);
+    setStock(cached.stock);
+    setIssues(cached.issues);
+
+    // 2. Reconcile with the cloud.
     setSyncing(true);
     const cloud = await fetchStoreState(ref.number);
     setSyncing(false);
-    if (!cloud) return; // offline — keep the cached copy
 
-    if (cloud.layout) {
-      const normalized = normalizeLayout(cloud.layout);
-      saveLayout(ref.number, normalized);
-      setLayout(normalized);
-    } else {
-      resetLayout(ref.number);
-      setLayout(getLayout(ref.number));
+    let s = getStock(ref.number);
+    let i = getIssues(ref.number);
+    if (cloud) {
+      if (cloud.layout) {
+        l = normalizeLayout(cloud.layout);
+        saveLayout(ref.number, l);
+      } else {
+        resetLayout(ref.number);
+        l = getLayout(ref.number);
+      }
+      s = cloud.stock;
+      i = cloud.issues;
     }
-    saveStock(ref.number, cloud.stock);
-    setStock(cloud.stock);
-    saveIssues(ref.number, cloud.issues);
-    setIssues(cloud.issues);
+
+    // 3. Prune against the final layout and write the clean state back, so the
+    //    orphans are gone for good rather than resurrected on the next load.
+    const clean = pruneToLayout(l, s, i);
+    setLayout(l);
+    setStock(clean.stock);
+    setIssues(clean.issues);
+    saveStock(ref.number, clean.stock);
+    saveIssues(ref.number, clean.issues);
+    if (clean.dropped > 0 || cloud) {
+      pushStock(ref.number, clean.stock);
+      pushIssues(ref.number, clean.issues);
+    }
   }
 
   // ── Picker actions ────────────────────────────────────────────────────────
@@ -293,6 +334,37 @@ export default function TableSurvey({ mode: initialMode }: { mode: Mode }) {
     resetLayout(store.number);
     pushLayoutReset(store.number);
     setLayout(getLayout(store.number));
+  }
+
+  /** Wipe this store's survey — marks only, layout untouched. */
+  function clearMarks() {
+    if (!store) return;
+    const ok = window.confirm(
+      `Clear every out-of-stock mark and display issue for store #${store.number}?\n\n` +
+        `This cannot be undone, and it clears them for everyone using this store. ` +
+        `The store's layout is not affected.`
+    );
+    if (!ok) return;
+    setStock({});
+    setIssues({});
+    saveStock(store.number, {});
+    pushStock(store.number, {});
+    saveIssues(store.number, {});
+    pushIssues(store.number, {});
+    setDone({ left: false, center: false, right: false, totem: false });
+    setReport("");
+  }
+
+  /** Nuke this device back to first-run. Cloud store data survives. */
+  function resetDevice() {
+    const ok = window.confirm(
+      `Reset everything on this device?\n\n` +
+        `Forgets your weekly schedule, your saved stores, and all cached data here.\n\n` +
+        `Store data in the cloud is NOT deleted — enter a store number again and it all comes back.`
+    );
+    if (!ok) return;
+    clearDeviceData();
+    window.location.reload();
   }
 
   // ── Editor ────────────────────────────────────────────────────────────────
@@ -428,7 +500,16 @@ export default function TableSurvey({ mode: initialMode }: { mode: Mode }) {
     }
   }
 
-  const count = mode === "stock" ? Object.keys(stock).length : Object.keys(issues).length;
+  // Derived from the LAYOUT, not from raw key counts — so the number can never
+  // again disagree with what's actually highlighted on the table.
+  const count = (() => {
+    if (!layout) return 0;
+    const { itemIds, slotIds } = collectIds(layout);
+    return mode === "stock"
+      ? Object.keys(stock).filter((k) => itemIds.has(k)).length
+      : Object.keys(issues).filter((k) => slotIds.has(k)).length;
+  })();
+
   if (!ready) return null;
   const rootClass = `${styles.root} ${mode === "issues" ? styles.issues : ""}`;
 
@@ -583,14 +664,21 @@ export default function TableSurvey({ mode: initialMode }: { mode: Mode }) {
             )}
           </div>
 
-          {/* Destructive — parked at the very bottom, behind a confirm. */}
-          {hasLayoutOverride(store.number) && (
-            <div className={styles.restoreRow}>
+          {/* Destructive — parked at the very bottom, every one behind a confirm. */}
+          <div className={styles.restoreRow}>
+            <div className={styles.dangerLabel}>Danger zone</div>
+            {hasLayoutOverride(store.number) && (
               <button className={styles.restoreBtn} onClick={restoreDefault}>
                 Restore default planogram
               </button>
-            </div>
-          )}
+            )}
+            <button className={styles.restoreBtn} onClick={clearMarks}>
+              Clear all marks for store #{store.number}
+            </button>
+            <button className={styles.dangerBtn} onClick={resetDevice}>
+              Reset everything on this device
+            </button>
+          </div>
         </>
       )}
 

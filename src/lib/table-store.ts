@@ -150,6 +150,21 @@ export function resetLayout(storeNumber: string): void {
   if (hasWindow()) localStorage.removeItem(LAYOUT_PREFIX + storeNumber);
 }
 
+/**
+ * Wipe every trace of the toolkit from this device: schedule, stores, layouts,
+ * marks, caches. Store data in the cloud is untouched — enter the store number
+ * again and it all comes back.
+ */
+export function clearDeviceData(): void {
+  if (!hasWindow()) return;
+  const doomed: string[] = [];
+  for (let i = 0; i < localStorage.length; i++) {
+    const k = localStorage.key(i);
+    if (k && k.startsWith("sony-")) doomed.push(k);
+  }
+  doomed.forEach((k) => localStorage.removeItem(k));
+}
+
 // ─── Stock + Issues ─────────────────────────────────────────────────────────
 export function getStock(storeNumber: string): StockMap {
   return read<StockMap>(STOCK_PREFIX + storeNumber, {});

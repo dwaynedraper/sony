@@ -201,6 +201,25 @@ export function buildDefaultLayout(): TableLayout {
   };
 }
 
+/**
+ * Every live item ID and slot ID in a layout.
+ *
+ * Used to prune orphaned marks. If a stock key doesn't match a real item —
+ * because the product was swapped out, or because it predates the switch to
+ * stable IDs — it's meaningless and must not be counted or stored.
+ */
+export function collectIds(layout: TableLayout): { itemIds: Set<string>; slotIds: Set<string> } {
+  const itemIds = new Set<string>();
+  const slotIds = new Set<string>();
+  for (const sec of [layout.faces.left, layout.faces.center, layout.faces.right, ...layout.totem]) {
+    for (const slot of sec.slots) {
+      slotIds.add(slot.id);
+      for (const it of slot.items) itemIds.add(it.id);
+    }
+  }
+  return { itemIds, slotIds };
+}
+
 /** A lens name broken into the only parts worth showing on a shelf tile. */
 export interface LensName {
   focal: string; // "70-200mm" | "90mm" | ""  ("" = didn't parse)
