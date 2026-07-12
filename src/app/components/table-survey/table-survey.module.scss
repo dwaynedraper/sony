@@ -14,7 +14,8 @@
   --tile: #1e242c;
   --tileEdge: #323b46;
 
-  max-width: 480px;
+  width: 100%;
+  max-width: 1200px;   /* full width, capped so it never sprawls on a big monitor */
   margin: 0 auto;
   position: relative;
   color: var(--txt);
@@ -159,6 +160,47 @@
   font-weight: 800; padding: 12px; border-radius: 11px; cursor: pointer; font-size: 13px; }
 .addNew { flex: 1; border: 1px dashed var(--tileEdge); background: transparent; color: var(--accent);
   font-weight: 800; padding: 12px; border-radius: 11px; cursor: pointer; font-size: 13px; }
+
+/* ─── Wide screens ────────────────────────────────────────────────────────────
+   Desktop isn't a big phone. The table map gets room to actually read like a
+   table, and the columns go flexible so all 8 positions fit on screen at once —
+   no horizontal scrolling at a desk. */
+@media (min-width: 900px) {
+  .h1 { font-size: 24px; }
+  .hint { font-size: 13.5px; }
+
+  .tableMap { grid-template-columns: 84px 1fr 84px; gap: 12px; }
+  .face { min-height: 130px; }
+  .faceLbl { font-size: 16px; letter-spacing: .08em; }
+  .lbl { font-size: 12px; }
+  .check { width: 24px; height: 24px; font-size: 14px; top: 8px; right: 8px; }
+
+  /* Columns share the available width instead of overflowing into a scroller. */
+  .strip { padding: 14px 2px 24px; gap: 14px; }
+  .col { flex: 1 1 0; min-width: 0; max-width: 200px; }
+  .scrollNote { display: none; }
+
+  .sq { padding: 12px; }
+  .sqName { font-size: 12.5px; }
+  .lens { width: 108px; }
+
+  .sheet { max-width: 560px; }
+  .storeName { font-size: 16px; }
+}
+
+/* ─── Landscape phone ─────────────────────────────────────────────────────────
+   Short and wide: claw back vertical space so the table and the sheet still fit. */
+@media (orientation: landscape) and (max-height: 540px) {
+  .root { padding-bottom: 74px; }
+  .h1 { font-size: 17px; }
+  .hint { margin: 2px 0 10px; }
+  .header { padding-bottom: 8px; }
+  .storeBar { padding: 7px 12px; margin-bottom: 8px; }
+  .face { min-height: 44px; }
+  .sheet { max-height: 94dvh; padding: 12px 16px 14px; }
+  .catList { max-height: 38dvh; }
+  .strip { padding-top: 6px; }
+}
 
 /* Destructive action, parked at the very bottom of the overview */
 .restoreRow { margin-top: 28px; padding-top: 16px; border-top: 1px solid var(--line); text-align: center; }

@@ -36,6 +36,9 @@ yarn-error.log*
 # vercel
 .vercel
 
+# recorded tutorial videos (regenerate with: node scripts/record-tour.mjs)
+/docs/tour/
+
 # typescript
 *.tsbuildinfo
 next-env.d.ts

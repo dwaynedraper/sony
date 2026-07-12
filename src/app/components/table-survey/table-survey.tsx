@@ -406,7 +406,8 @@ export default function TableSurvey({ mode }: { mode: Mode }) {
   if (showPicker || !store) {
     return (
       <div className={rootClass}>
-        <div className={styles.sheet} style={{ borderRadius: 16, border: "1px solid var(--line)", maxWidth: "100%" }}>
+        {/* A store picker is a small form — don't let it sprawl on a desktop monitor. */}
+        <div className={styles.sheet} style={{ borderRadius: 16, border: "1px solid var(--line)", maxWidth: 520, marginTop: 8 }}>
           <div className={styles.sheetH}>
             <span>{pickerView === "schedule" ? "Your weekly schedule" : "Which store today?"}</span>
             {store && <button className={styles.sheetX} onClick={() => setShowPicker(false)}>✕</button>}
