@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { basketGenres, dontForgetItems, type GenreDefinition, type BasketItem } from "@/data/basket-genres";
+import { basketGenres, dontForgetItems, type BasketItem } from "@/data/basket-genres";
 
 export default function BasketBuilderClient() {
   const [selectedGenreId, setSelectedGenreId] = useState<string>("");
@@ -10,37 +10,49 @@ export default function BasketBuilderClient() {
 
   const selectedGenre = basketGenres.find(g => g.id === selectedGenreId);
 
+  // Look the genre up inside the effect so `selectedGenre` (a fresh object each
+  // render) isn't a dependency, and drop stale results if the genre changes
+  // mid-flight. Rationales are reset by the genre buttons, not here — calling
+  // setState in the effect body would cascade renders.
   useEffect(() => {
-    if (!selectedGenre) return;
+    const genre = basketGenres.find((g) => g.id === selectedGenreId);
+    if (!genre) return;
 
-    // Reset rationales when switching genres
-    setRationales({});
-    
-    const allItems = [...selectedGenre.items, ...dontForgetItems];
-    
-    // Fetch rationales for each item
+    let cancelled = false;
+    const allItems = [...genre.items, ...dontForgetItems];
+
     allItems.forEach(async (item) => {
-      const key = `${selectedGenre.id}-${item.label}`;
-      setLoadingItems(prev => ({ ...prev, [key]: true }));
-      
+      const key = `${genre.id}-${item.label}`;
+      setLoadingItems((prev) => ({ ...prev, [key]: true }));
+
       try {
         const res = await fetch("/api/generate-basket-rationale", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ genre: selectedGenre.title, item: item.label }),
+          body: JSON.stringify({ genre: genre.title, item: item.label }),
         });
-        
-        if (res.ok) {
+
+        if (res.ok && !cancelled) {
           const data = await res.json();
-          setRationales(prev => ({ ...prev, [key]: data.rationale }));
+          setRationales((prev) => ({ ...prev, [key]: data.rationale }));
         }
       } catch (err) {
         console.error("Rationale fetch error:", err);
       } finally {
-        setLoadingItems(prev => ({ ...prev, [key]: false }));
+        if (!cancelled) setLoadingItems((prev) => ({ ...prev, [key]: false }));
       }
     });
+
+    return () => {
+      cancelled = true;
+    };
   }, [selectedGenreId]);
+
+  function selectGenre(id: string) {
+    setSelectedGenreId(id);
+    setRationales({});
+    setLoadingItems({});
+  }
 
   return (
     <div className="max-w-4xl mx-auto py-8 px-4">
@@ -54,7 +66,7 @@ export default function BasketBuilderClient() {
         {basketGenres.map((genre) => (
           <button
             key={genre.id}
-            onClick={() => setSelectedGenreId(genre.id)}
+            onClick={() => selectGenre(genre.id)}
             className={`p-4 rounded-xl border text-left transition-all duration-200 ${
               selectedGenreId === genre.id
                 ? "bg-foreground text-background border-foreground shadow-lg scale-[1.02]"
@@ -121,7 +133,7 @@ export default function BasketBuilderClient() {
               Copy Recommendation Pitch
             </button>
             <button 
-              onClick={() => setSelectedGenreId("")}
+              onClick={() => selectGenre("")}
               className="text-sm font-semibold text-text-secondary hover:text-foreground"
             >
               Reset
@@ -146,6 +158,6 @@ function Badge({ category }: { category: BasketItem["category"] }) {
   if (category === "make-it-shine") {
     return <span className="px-2 py-0.5 rounded text-[10px] font-black bg-blue-500/10 text-blue-500 uppercase tracking-tighter border border-blue-500/20">Make it Shine</span>;
   }
-  return <span className="px-2 py-0.5 rounded text-[10px] font-black bg-text-muted/10 text-text-muted uppercase tracking-tighter border border-text-muted/20">Don't Forget</span>;
+  return <span className="px-2 py-0.5 rounded text-[10px] font-black bg-text-muted/10 text-text-muted uppercase tracking-tighter border border-text-muted/20">Don&apos;t Forget</span>;
 }
 

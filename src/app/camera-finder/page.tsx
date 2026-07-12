@@ -1,5 +1,4 @@
 import type { Metadata } from "next";
-import Navbar from "@/components/navbar";
 import BackButton from "@/components/back-button";
 import CameraFinderClient from "./client";
 

@@ -1,28 +1,10 @@
-import { NextResponse, type NextRequest } from "next/server";
-import { decryptSession } from "@/lib/session";
+import { NextResponse } from "next/server";
 
-const PUBLIC_PREFIXES = ["/login", "/api/auth", "/all-issues", "/api/admin"];
-const PUBLIC_FILE_EXT = /\.(png|jpg|jpeg|svg|ico|webp|avif|gif)$/i;
-
-function isPublicPath(pathname: string): boolean {
-  if (PUBLIC_PREFIXES.some((p) => pathname === p || pathname.startsWith(p + "/"))) return true;
-  if (PUBLIC_FILE_EXT.test(pathname)) return true;
-  return false;
-}
-
-export async function proxy(req: NextRequest): Promise<NextResponse> {
-  const { pathname } = req.nextUrl;
-
-  const cookie = req.cookies.get("sony-session")?.value;
-  const session = await decryptSession(cookie);
-
-  if (!session && !isPublicPath(pathname)) {
-    const url = req.nextUrl.clone();
-    url.pathname = "/login";
-    url.search = "";
-    return NextResponse.redirect(url);
-  }
-
+/**
+ * The toolkit is open. Identity is the store number — no login, no location,
+ * no tracking. This middleware is a pass-through.
+ */
+export async function proxy(): Promise<NextResponse> {
   return NextResponse.next();
 }
 

@@ -1,27 +1,27 @@
 import { NextResponse } from "next/server";
 import { openai } from "@ai-sdk/openai";
 import { generateText } from "ai";
-import { getSession } from "@/lib/dal";
 import { getDb } from "@/lib/db";
 
-export async function POST(req: Request) {
-  const session = await getSession();
-  if (!session) {
-    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-  }
+/** No login — rate limit by client IP instead of user. */
+function clientIp(req: Request): string {
+  return req.headers.get("x-forwarded-for")?.split(",")[0].trim() ?? "unknown";
+}
 
+export async function POST(req: Request) {
   const { genre, item } = await req.json();
 
   if (!genre || !item) {
     return NextResponse.json({ error: "Missing parameters" }, { status: 400 });
   }
 
-  // Rate limiting check
+  // Rate limiting check (per IP)
+  const ip = clientIp(req);
   const db = await getDb();
   const now = new Date();
   const oneHourAgo = new Date(now.getTime() - 60 * 60 * 1000);
   const requestCount = await db.collection("aiUsage").countDocuments({
-    userId: session.userId,
+    ip,
     timestamp: { $gt: oneHourAgo },
   });
 
@@ -29,7 +29,7 @@ export async function POST(req: Request) {
     return NextResponse.json({ error: "Rate limit exceeded" }, { status: 429 });
   }
 
-  await db.collection("aiUsage").insertOne({ userId: session.userId, timestamp: now });
+  await db.collection("aiUsage").insertOne({ ip, timestamp: now });
 
   // ─── Cache Check ─────────────────────────────────────────────────────────
   const cacheKey = { genre: genre.toLowerCase(), item: item.toLowerCase() };

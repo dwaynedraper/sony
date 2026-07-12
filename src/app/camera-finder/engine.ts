@@ -55,7 +55,7 @@ function getUseCaseSpecContribution(camera: CameraModel, useCase: UseCase) {
 
 export function getRecommendations(answers: AnswerState): FinalRecommendations {
   // 1. Initial Pool
-  let pool = [...cameras];
+  const pool = [...cameras];
 
   // 2. Score Remaining
   const scoredCameras = pool.map(camera => {
@@ -150,7 +150,7 @@ export function getRecommendations(answers: AnswerState): FinalRecommendations {
   }
 
   const best = scoredCameras[0];
-  let alternatives = scoredCameras.slice(1);
+  const alternatives = scoredCameras.slice(1);
 
   // Identify Stretch Pick: An alternative that mathematically scored higher than the Best Pick (baseScore),
   // but lost because it was over budget. We take the one with the absolute highest baseScore possible.

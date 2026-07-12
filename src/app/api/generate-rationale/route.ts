@@ -2,8 +2,12 @@ import { NextResponse } from 'next/server';
 import { openai } from '@ai-sdk/openai';
 import { streamObject } from 'ai';
 import { z } from 'zod';
-import { getSession } from '@/lib/dal';
 import { getDb } from '@/lib/db';
+
+/** No login — rate limit by client IP instead of user. */
+function clientIp(req: Request): string {
+  return req.headers.get('x-forwarded-for')?.split(',')[0].trim() ?? 'unknown';
+}
 
 export const maxDuration = 30;
 
@@ -27,19 +31,14 @@ interface EngineResults {
 }
 
 export async function POST(req: Request) {
-  const session = await getSession();
-  if (!session) {
-    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-  }
-
-  // ─── Rate Limiting ───────────────────────────────────────────────────────
+  // ─── Rate Limiting (per IP) ──────────────────────────────────────────────
+  const ip = clientIp(req);
   const db = await getDb();
   const now = new Date();
   const oneHourAgo = new Date(now.getTime() - 60 * 60 * 1000);
 
-  // Count requests in the last hour for this user
   const requestCount = await db.collection("aiUsage").countDocuments({
-    userId: session.userId,
+    ip,
     timestamp: { $gt: oneHourAgo },
   });
 
@@ -50,11 +49,7 @@ export async function POST(req: Request) {
     );
   }
 
-  // Record this request
-  await db.collection("aiUsage").insertOne({
-    userId: session.userId,
-    timestamp: now,
-  });
+  await db.collection("aiUsage").insertOne({ ip, timestamp: now });
 
   // ─── Original Logic ──────────────────────────────────────────────────────
   const { answers, results } = (await req.json()) as {

@@ -1,0 +1,388 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>Sony Table — Stock / Issues Mockup</title>
+<style>
+  :root{
+    --bg:#0b0d10; --panel:#14181d; --panel2:#1b2027; --line:#2a313a;
+    --txt:#eef2f6; --muted:#8b95a1; --dim:#5c6672;
+    --accent:#ff7a1a; --accent2:#3b82f6;
+    --ok:#22c55e; --out:#ef4444; --warn:#f59e0b;
+    --tile:#1e242c; --tileEdge:#323b46;
+    --cam:#ff7a1a; --lens:#5eb3ff; --kit:#a78bfa; --acc:#facc15; --disp:#7b8794;
+  }
+  *{box-sizing:border-box; -webkit-tap-highlight-color:transparent;}
+  html,body{margin:0; padding:0; background:var(--bg); color:var(--txt);
+    font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;}
+  body{max-width:480px; margin:0 auto; min-height:100vh; position:relative; overflow-x:hidden;}
+  .screen{display:none; padding:0 0 96px;} .screen.active{display:block;}
+
+  header{position:sticky; top:0; z-index:20; background:rgba(11,13,16,.86);
+    backdrop-filter:blur(12px); border-bottom:1px solid var(--line); padding:12px 16px 10px;}
+  .brand{display:flex; align-items:center; gap:8px; font-weight:800; letter-spacing:-.02em; font-size:16px;}
+  .brand .dot{width:8px;height:8px;border-radius:50%;background:var(--accent);box-shadow:0 0 12px var(--accent);}
+  .sub{color:var(--muted); font-size:12px; margin-top:2px;}
+  .mode{display:flex; gap:6px; margin-top:12px; background:var(--panel); border:1px solid var(--line); border-radius:12px; padding:4px;}
+  .mode button{flex:1; border:0; background:transparent; color:var(--muted); font-weight:700; font-size:12.5px; padding:9px 6px; border-radius:9px; cursor:pointer; transition:.15s;}
+  .mode button.on{background:var(--accent); color:#111;}
+  body.issues .mode button.on{background:var(--accent2); color:#fff;}
+  body.issues .brand .dot{background:var(--accent2); box-shadow:0 0 12px var(--accent2);}
+
+  .wrap{padding:18px 16px 0;}
+  .h1{font-size:20px; font-weight:800; letter-spacing:-.02em;}
+  .hint{color:var(--muted); font-size:12.5px; margin:4px 0 16px; line-height:1.45;}
+
+  .table-map{display:grid; grid-template-columns:54px 1fr 54px; gap:8px; align-items:stretch;}
+  .sec, .face{position:relative; background:var(--panel); border:1.5px solid var(--line); border-radius:14px; cursor:pointer; transition:.16s;}
+  .sec:active, .face:active{transform:scale(.99);}
+  .sec.done, .face.done{border-color:var(--ok); box-shadow:0 0 0 1.5px var(--ok) inset;}
+  .check{position:absolute; top:6px; right:6px; width:20px;height:20px;border-radius:50%; background:var(--ok);
+    color:#06210f; display:none; align-items:center;justify-content:center; font-size:12px; font-weight:900; z-index:3;}
+  .done > .check{display:flex;}
+  .lbl{writing-mode:vertical-rl; letter-spacing:.2em; font-size:10px; font-weight:800; color:var(--muted); text-transform:uppercase;}
+
+  .totem{grid-column:1; grid-row:1 / span 2; display:flex; align-items:center; justify-content:center;}
+  .center{grid-column:3; grid-row:1 / span 2; display:flex; align-items:center; justify-content:center;}
+  .faces{grid-column:2; grid-row:1 / span 2; display:flex; flex-direction:column; gap:8px;}
+  .face{flex:1; min-height:60px; display:flex; align-items:center; justify-content:center;}
+  .facelbl{font-weight:800; font-size:13px; letter-spacing:.05em; color:var(--muted);}
+  .ridge{height:2px; background:linear-gradient(90deg,transparent,var(--line),transparent); margin:0 8px;}
+
+  /* Side zoom */
+  .zhead{position:sticky; top:0; z-index:15; display:flex; align-items:center; gap:8px; padding:12px;
+    background:rgba(11,13,16,.9); backdrop-filter:blur(12px); border-bottom:1px solid var(--line);}
+  .back{border:1px solid var(--line); background:var(--panel); color:var(--txt); width:38px;height:38px; border-radius:11px; font-size:17px; cursor:pointer; flex:0 0 auto;}
+  .zttl{font-weight:800; font-size:15px; flex:1; min-width:0;}
+  .zttl small{display:block; color:var(--muted); font-weight:600; font-size:11px;}
+  .editbtn{border:1px solid var(--line); background:var(--panel); color:var(--txt); font-weight:700; font-size:12px; padding:9px 9px; border-radius:11px; cursor:pointer; flex:0 0 auto;}
+  .editbtn.on{background:var(--accent); color:#111; border-color:var(--accent);}
+  body.issues .editbtn.on{background:var(--accent2); color:#fff;}
+  .complete{border:0; background:var(--ok); color:#06210f; font-weight:800; font-size:12.5px; padding:10px 11px; border-radius:11px; cursor:pointer; flex:0 0 auto;}
+  .complete.isdone{background:var(--panel2); color:var(--ok); border:1px solid var(--ok);}
+  .editbanner{display:none; text-align:center; font-size:12px; color:var(--accent); padding:9px 16px 0; font-weight:600;}
+  body.editing .editbanner{display:block;}
+  .scrollnote{text-align:center; color:var(--dim); font-size:11px; padding:8px 0 2px;}
+
+  .strip{display:flex; gap:12px; overflow-x:auto; padding:10px 16px 20px;}
+  .strip::-webkit-scrollbar{height:6px;} .strip::-webkit-scrollbar-thumb{background:var(--line); border-radius:3px;}
+  .col{flex:0 0 auto; width:132px; display:flex; flex-direction:column; gap:8px;}
+  .pos{font-size:11px; color:var(--dim); font-weight:700; text-align:center; letter-spacing:.05em;}
+  .stack{display:flex; flex-direction:column; gap:7px;}
+  .sq{display:flex; align-items:center; gap:8px; background:var(--tile); border:1px solid var(--tileEdge); border-radius:10px; padding:10px 10px; cursor:pointer; transition:.12s;}
+  .sq:active{transform:scale(.97);}
+  .sq .tag{font-size:8px; font-weight:800; letter-spacing:.04em; color:var(--dim); border:1px solid var(--line);
+    border-radius:5px; padding:2px 3px; width:42px; text-align:center; flex:0 0 auto;}
+  .sq .nm{font-size:11.5px; font-weight:600; color:var(--txt); line-height:1.15; flex:1;}
+  .sq.camera .tag{color:var(--cam); border-color:var(--cam);}
+  .sq.lens .tag{color:var(--lens); border-color:var(--lens);}
+  .sq.kit .tag{color:var(--kit); border-color:var(--kit);}
+  .sq.accessory .tag{color:var(--acc); border-color:var(--acc);}
+  .sq.display .tag, .sq.tablet .tag{color:var(--disp); border-color:var(--disp);}
+  .sq.out{background:rgba(239,68,68,.14); border-color:var(--out);}
+  .sq.out .nm{color:#ffb4b4; text-decoration:line-through;}
+  .addsq{display:none; align-items:center; justify-content:center; border:1px dashed var(--ok);
+    background:rgba(34,197,94,.08); color:var(--ok); font-weight:900; font-size:18px; padding:6px; border-radius:10px; cursor:pointer;}
+  body.editing .addsq{display:flex;}
+  body.editing .sq{border-style:dashed;}
+  body.editing .sq .nm::after{content:" ✎"; color:var(--dim); font-size:10px;}
+  body.issues:not(.editing) .stack .sq{opacity:.5; pointer-events:none;}
+
+  .flags{display:none; flex-wrap:wrap; gap:5px; margin-top:2px;}
+  body.issues:not(.editing) .flags{display:flex;}
+  .chip{font-size:10px; font-weight:700; padding:6px 7px; border-radius:8px; border:1px solid var(--tileEdge);
+    background:var(--tile); color:var(--muted); cursor:pointer; flex:1 1 44%; text-align:center;}
+  .chip.on{background:var(--warn); color:#241a00; border-color:var(--warn);}
+
+  /* Totem zoom — 3 stacked rows */
+  .totemrows{display:flex; flex-direction:column; gap:12px; padding:14px 16px;}
+  .trow{background:var(--panel); border:1px solid var(--line); border-radius:14px; padding:10px 10px 6px;}
+  .trow h4{margin:0 0 9px; font-size:11px; letter-spacing:.1em; text-transform:uppercase; color:var(--muted);}
+  .lane{display:flex; gap:8px; overflow-x:auto; padding-bottom:6px;}
+  .lane::-webkit-scrollbar{height:5px;} .lane::-webkit-scrollbar-thumb{background:var(--line); border-radius:3px;}
+  .lens{flex:0 0 auto; width:66px; background:var(--tile); border:1px solid var(--tileEdge); border-radius:10px; padding:9px 4px; text-align:center; cursor:pointer; transition:.12s;}
+  .lens:active{transform:scale(.97);}
+  .lens .f{font-weight:800; font-size:15px;} .lens .a{font-size:10.5px; color:var(--muted); margin-top:1px;}
+  .lens .c{font-size:8px; color:var(--dim); letter-spacing:.06em; margin-top:3px; text-transform:uppercase;}
+  .lens.out{background:rgba(239,68,68,.14); border-color:var(--out);} .lens.out .f{color:#ffb4b4; text-decoration:line-through;}
+
+  .foot{position:fixed; bottom:0; left:0; right:0; max-width:480px; margin:0 auto; background:linear-gradient(0deg,var(--bg) 60%,transparent); padding:14px 16px 18px; z-index:18;}
+  .foot .bar{background:var(--panel); border:1px solid var(--line); border-radius:13px; padding:11px 14px; display:flex; align-items:center; justify-content:space-between; font-size:12.5px;}
+  .foot .count b{color:var(--accent);} body.issues .foot .count b{color:var(--accent2);}
+  .send{border:0; background:var(--accent); color:#111; font-weight:800; font-size:12.5px; padding:9px 14px; border-radius:10px; cursor:pointer;}
+  body.issues .send{background:var(--accent2); color:#fff;}
+  .tag2{display:inline-block; font-size:9px; font-weight:800; letter-spacing:.1em; color:var(--dim); border:1px solid var(--line); border-radius:20px; padding:3px 9px; margin-left:6px; vertical-align:middle;}
+
+  /* Editor sheet */
+  .sheet-bg{position:fixed; inset:0; background:rgba(0,0,0,.55); z-index:40; display:none; align-items:flex-end;}
+  .sheet-bg.on{display:flex;}
+  .sheet{background:var(--panel); border-top:1px solid var(--line); border-radius:18px 18px 0 0; width:100%; max-width:480px; margin:0 auto; padding:16px 16px 22px; max-height:84vh; display:flex; flex-direction:column;}
+  .sheet-h{display:flex; align-items:center; justify-content:space-between; font-weight:800; font-size:15px; margin-bottom:10px;}
+  .sheet-h .x{border:0; background:var(--panel2); color:var(--txt); width:30px; height:30px; border-radius:9px; cursor:pointer;}
+  .cur{font-size:13px; color:var(--muted); margin-bottom:12px;} .cur b{color:var(--txt);}
+  .catchips{display:none; flex-wrap:wrap; gap:6px; margin-bottom:12px;}
+  .catchip{font-size:11px; font-weight:800; letter-spacing:.04em; padding:8px 10px; border-radius:9px; border:1px solid var(--tileEdge); background:var(--tile); color:var(--muted); cursor:pointer;}
+  .catchip.on{background:var(--accent); color:#111; border-color:var(--accent);}
+  .search{width:100%; padding:11px 12px; border-radius:11px; border:1px solid var(--line); background:var(--bg); color:var(--txt); font-size:14px; margin-bottom:10px;}
+  .catlist{overflow-y:auto; flex:1; display:flex; flex-direction:column; gap:5px; margin-bottom:12px; min-height:70px;}
+  .catrow{padding:11px 12px; border-radius:10px; background:var(--tile); border:1px solid var(--tileEdge); cursor:pointer; font-size:13.5px; font-weight:600;}
+  .catrow:active{transform:scale(.99);}
+  .sheet-actions{display:flex; gap:8px;}
+  .removebtn{flex:1; border:1px solid var(--out); background:rgba(239,68,68,.1); color:#ff9b9b; font-weight:800; padding:12px; border-radius:11px; cursor:pointer; font-size:13px;}
+  .addnew{flex:1; border:1px dashed var(--tileEdge); background:transparent; color:var(--accent); font-weight:800; padding:12px; border-radius:11px; cursor:pointer; font-size:13px;}
+  body.issues .addnew{color:var(--accent2);}
+</style>
+</head>
+<body>
+
+<header>
+  <div class="brand"><span class="dot"></span>Sony Table <span class="tag2">MOCKUP</span></div>
+  <div class="sub" id="subhead">Stock check · tap a section to walk it</div>
+  <div class="mode">
+    <button id="mStock" class="on" onclick="setMode('stock')">📦 Stock Check</button>
+    <button id="mIssue" onclick="setMode('issues')">⚠️ Display Issues</button>
+  </div>
+</header>
+
+<!-- OVERVIEW -->
+<section id="overview" class="screen active">
+  <div class="wrap">
+    <div class="h1">Store #180 · Frisco</div>
+    <div class="hint">Top-down view of the whole table. Tap the side you're counting.</div>
+    <div class="table-map">
+      <div class="sec totem" onclick="openTotem()" id="ovTotem"><div class="check">✓</div><div class="lbl">Lens Totem</div></div>
+      <div class="faces">
+        <div class="face" onclick="openSide('right')" id="ovRight"><div class="check">✓</div><span class="facelbl">Right</span></div>
+        <div class="ridge"></div>
+        <div class="face" onclick="openSide('left')" id="ovLeft"><div class="check">✓</div><span class="facelbl">Left</span></div>
+      </div>
+      <div class="sec center" onclick="openSide('center')" id="ovCenter"><div class="check">✓</div><div class="lbl">Center</div></div>
+    </div>
+    <div class="hint" style="margin-top:16px">A finished section shows a <span style="color:var(--ok);font-weight:700">green outline + ✓</span>.</div>
+  </div>
+</section>
+
+<!-- SIDE ZOOM -->
+<section id="sideView" class="screen">
+  <div class="zhead">
+    <button class="back" onclick="go('overview')">‹</button>
+    <div class="zttl" id="sideTitle">Left</div>
+    <button class="editbtn" id="editBtn" onclick="toggleEdit()">✎ Edit</button>
+    <button class="complete" id="sideComplete" onclick="toggleComplete()">Done</button>
+  </div>
+  <div class="editbanner">Edit mode — tap any square to change or remove it, or use the green + to add.</div>
+  <div class="scrollnote">← scroll to walk the side →</div>
+  <div class="strip" id="sideStrip"></div>
+</section>
+
+<!-- TOTEM ZOOM -->
+<section id="totemView" class="screen">
+  <div class="zhead">
+    <button class="back" onclick="go('overview')">‹</button>
+    <div class="zttl">Lens Totem <small>Row 1 top → Row 3 bottom</small></div>
+    <button class="complete" id="totemComplete" onclick="toggleComplete()">Done</button>
+  </div>
+  <div class="totemrows" id="totemGrid"></div>
+</section>
+
+<div class="foot">
+  <div class="bar">
+    <div class="count"><b id="outCount">0</b> <span id="outWord">out of stock</span></div>
+    <button class="send" onclick="alert('Mockup — this would copy a ready-to-paste report.')">Generate report</button>
+  </div>
+</div>
+
+<!-- EDITOR SHEET -->
+<div id="editor" class="sheet-bg" onclick="closeEditorBg(event)">
+  <div class="sheet">
+    <div class="sheet-h"><span id="edTitle">Edit</span><button class="x" onclick="closeEditor()">✕</button></div>
+    <div class="cur" id="edCurWrap">Currently: <b id="edCur"></b></div>
+    <div class="catchips" id="edCats"></div>
+    <input id="edSearch" class="search" placeholder="Search…" oninput="renderCatalog()" autocomplete="off">
+    <div id="edList" class="catlist"></div>
+    <div class="sheet-actions">
+      <button class="removebtn" id="edRemove" onclick="removeItem()">Remove this square</button>
+      <button class="addnew" onclick="addNew()">＋ Add New (custom)</button>
+    </div>
+  </div>
+</div>
+
+<script>
+/* ---------- DATA: items per slot (camera anchor + lenses/kits/accessories) ---------- */
+const SIDES = {
+  left:{title:"Left", tag:"ZV · Video side", slots:[
+    {items:[{c:"camera",l:"ZV-1F"}]},
+    {items:[{c:"camera",l:"ZV-1"}]},
+    {items:[{c:"camera",l:"ZV-1 II"}]},
+    {items:[{c:"camera",l:"ZV-E10"},{c:"kit",l:"w/16-50"}]},
+    {items:[{c:"camera",l:"ZV-E10 II"},{c:"kit",l:"w/16-50"},{c:"lens",l:"E 11mm f/1.8"}]},
+    {items:[{c:"camera",l:"FX2"},{c:"camera",l:"FX3A"}]},
+    {items:[{c:"camera",l:"FX30"},{c:"lens",l:"PZ 18-105 G"},{c:"accessory",l:"XLR Handle"}]},
+    {items:[{c:"camera",l:"A7S III"},{c:"lens",l:"35mm f/1.4 GM"},{c:"accessory",l:"ECM-B10 Mic"}]},
+  ]},
+  center:{title:"Center", tag:"R-Series · Hybrid hero", slots:[
+    {items:[{c:"camera",l:"A7R V"},{c:"lens",l:"50mm f/1.4 GM"}]},
+    {items:[{c:"display",l:"Display Box"}]},
+    {items:[{c:"display",l:"Display Box"}]},
+    {items:[{c:"camera",l:"A7 V"},{c:"kit",l:"w/28-70 II"},{c:"lens",l:"24-70 GM II"},{c:"accessory",l:"ECM-M1 Mic"}]},
+  ]},
+  right:{title:"Right", tag:"Full-Frame · APS-C · P&S", slots:[
+    {items:[{c:"camera",l:"A7C II"},{c:"lens",l:"24-50 f/2.8 G"}]},
+    {items:[{c:"camera",l:"A7 III"},{c:"kit",l:"w/28-70"},{c:"lens",l:"50mm f/1.8"}]},
+    {items:[{c:"camera",l:"A7 IV"},{c:"kit",l:"w/28-70"},{c:"lens",l:"24-105 f/4 G"}]},
+    {items:[{c:"tablet",l:"Demo Tablet"}]},
+    {items:[{c:"camera",l:"A6700"},{c:"kit",l:"w/18-135"},{c:"lens",l:"16-55 f/2.8 G"}]},
+    {items:[{c:"camera",l:"A6400"},{c:"kit",l:"w/16-50"},{c:"kit",l:"w/18-135"}]},
+    {items:[{c:"camera",l:"A6100"},{c:"kit",l:"w/16-50"},{c:"kit",l:"Dual Lens"},{c:"lens",l:"35mm f/1.8"}]},
+    {items:[{c:"camera",l:"RX100 VII"}]},
+  ]},
+};
+const TOTEM = [
+  {h:"Row 1", lenses:[{f:"90",a:"ƒ2.8",c:"Macro"},{f:"10-20",a:"ƒ4",c:"APS-C UWA"},{f:"50",a:"ƒ1.8",c:"APS-C"},{f:"55-210",a:"ƒ4.5-6.3",c:"APS-C Tele"},{f:"70-350",a:"ƒ4.5-6.3",c:"APS-C Tele"}]},
+  {h:"Row 2", lenses:[{f:"16",a:"ƒ1.8",c:"Prime"},{f:"20",a:"ƒ1.8",c:"Prime"},{f:"24",a:"ƒ2.8",c:"Prime"},{f:"35",a:"ƒ1.8",c:"Prime"},{f:"85",a:"ƒ1.8",c:"Prime"},{f:"85",a:"ƒ1.4",c:"GM II"}]},
+  {h:"Row 3", lenses:[{f:"16-35",a:"ƒ4",c:"PZ Wide"},{f:"16-25",a:"ƒ2.8",c:"G"},{f:"16-35",a:"ƒ2.8",c:"GM II"},{f:"24-70",a:"ƒ2.8",c:"GM"},{f:"70-200",a:"ƒ2.8",c:"GM"},{f:"70-200",a:"ƒ2.8",c:"GM II"},{f:"70-300",a:"ƒ4.5-5.6",c:"G"}]},
+];
+
+/* Categories, sort rank, and per-category catalog for the typeahead */
+const CATS = [{k:"camera",t:"CAMERA"},{k:"lens",t:"LENS"},{k:"kit",t:"KIT"},{k:"accessory",t:"ACCESSORY"},{k:"display",t:"DISPLAY"},{k:"tablet",t:"TABLET"}];
+const RANK = {camera:0, display:0, tablet:0, lens:1, kit:1, accessory:2};
+const catTag = c => (CATS.find(x=>x.k===c)||{t:c}).t;
+const CATALOG = {};
+CATS.forEach(c=>CATALOG[c.k]=new Set());
+Object.values(SIDES).forEach(S=>S.slots.forEach(sl=>sl.items.forEach(it=>CATALOG[it.c].add(it.l))));
+CATALOG.display.add("Display Box"); CATALOG.tablet.add("Demo Tablet");
+CATS.forEach(c=>CATALOG[c.k]=[...CATALOG[c.k]].sort());
+const sortItems = sl => sl.items.sort((a,b)=>RANK[a.c]-RANK[b.c]);
+
+/* ---------- STATE ---------- */
+let mode="stock", current=null, editMode=false, editTarget=null;
+const outState={}, flagState={}, done={left:false,right:false,center:false,totem:false};
+const key=(s,i,j)=>s+"|"+i+"|"+(j??"x");
+
+/* ---------- NAV / MODES ---------- */
+function go(id){ if(id!=="sideView") resetEdit();
+  document.querySelectorAll(".screen").forEach(s=>s.classList.remove("active"));
+  document.getElementById(id).classList.add("active"); window.scrollTo(0,0); }
+function setMode(m){ mode=m; document.body.classList.toggle("issues", m==="issues");
+  document.getElementById("mStock").classList.toggle("on", m==="stock");
+  document.getElementById("mIssue").classList.toggle("on", m==="issues");
+  document.getElementById("subhead").textContent = m==="stock" ? "Stock check · tap a section to walk it" : "Display issues · flag alarm / power / broken";
+  document.getElementById("outWord").textContent = m==="stock" ? "out of stock" : "issues flagged";
+  refreshCount(); }
+
+/* ---------- OVERVIEW ---------- */
+function renderOverview(){
+  const map={left:"ovLeft",right:"ovRight",center:"ovCenter",totem:"ovTotem"};
+  ["left","right","center","totem"].forEach(sec=>document.getElementById(map[sec]).classList.toggle("done", done[sec]));
+}
+
+/* ---------- SIDE ZOOM ---------- */
+function openSide(sec){ current=sec; const S=SIDES[sec];
+  document.getElementById("sideTitle").innerHTML=S.title+' <small>'+S.tag+'</small>';
+  const strip=document.getElementById("sideStrip"); strip.innerHTML="";
+  S.slots.forEach((sl,si)=>{
+    sortItems(sl);
+    const col=document.createElement("div"); col.className="col";
+    const pos=document.createElement("div"); pos.className="pos"; pos.textContent=(si+1); col.appendChild(pos);
+    const stack=document.createElement("div"); stack.className="stack";
+    sl.items.forEach((it,ii)=>{
+      const k=key(sec,si,ii);
+      const sq=document.createElement("div"); sq.className="sq "+it.c+(outState[k]?" out":"");
+      sq.innerHTML='<span class="nm">'+it.l+'</span>';
+      sq.onclick=()=>{ if(editMode) openSquareEditor(sec,si,ii);
+        else if(mode==="stock"){ outState[k]=!outState[k]; openSide(sec); refreshCount(); } };
+      stack.appendChild(sq);
+    });
+    const add=document.createElement("button"); add.className="addsq"; add.textContent="+";
+    add.onclick=(e)=>{ e.stopPropagation(); openAdd(sec,si); };
+    stack.appendChild(add);
+    col.appendChild(stack);
+    if(sl.items.some(it=>it.c==="camera")){
+      const fl=document.createElement("div"); fl.className="flags";
+      ["Alarm","No Power","Broken","Missing"].forEach(lbl=>{ const c=document.createElement("div");
+        c.className="chip"+(flagState[key(sec,si,'f'+lbl)]?" on":""); c.textContent=lbl;
+        c.onclick=()=>{ const kk=key(sec,si,'f'+lbl); flagState[kk]=!flagState[kk]; openSide(sec); refreshCount(); };
+        fl.appendChild(c); });
+      col.appendChild(fl);
+    }
+    strip.appendChild(col);
+  });
+  updateCompleteBtn(); go("sideView");
+}
+
+/* ---------- TOTEM ZOOM ---------- */
+function openTotem(){ current="totem"; const g=document.getElementById("totemGrid"); g.innerHTML="";
+  TOTEM.forEach((row,ri)=>{ const r=document.createElement("div"); r.className="trow";
+    const lane=document.createElement("div"); lane.className="lane";
+    row.lenses.forEach((L,li)=>{ const k=key("totem",ri,li); const d=document.createElement("div");
+      d.className="lens"+(outState[k]?" out":""); d.onclick=()=>{ outState[k]=!outState[k]; openTotem(); refreshCount(); };
+      d.innerHTML='<div class="f">'+L.f+'</div><div class="a">'+L.a+'</div><div class="c">'+L.c+'</div>';
+      lane.appendChild(d); });
+    r.innerHTML="<h4>"+row.h+"</h4>"; r.appendChild(lane); g.appendChild(r); });
+  document.getElementById("totemComplete").classList.toggle("isdone", done.totem);
+  document.getElementById("totemComplete").textContent = done.totem ? "✓ Done" : "Done";
+  go("totemView");
+}
+
+/* ---------- EDIT MODE ---------- */
+function resetEdit(){ editMode=false; editTarget=null; document.body.classList.remove("editing");
+  const b=document.getElementById("editBtn"); if(b){ b.classList.remove("on"); b.textContent="✎ Edit"; } }
+function toggleEdit(){ editMode=!editMode; document.body.classList.toggle("editing", editMode);
+  const b=document.getElementById("editBtn"); b.classList.toggle("on", editMode); b.textContent=editMode?"✓ Editing":"✎ Edit";
+  openSide(current); }
+
+function openSquareEditor(sec,si,ii){ const it=SIDES[sec].slots[si].items[ii];
+  editTarget={sec,si,ii,cat:it.c,mode:"edit"};
+  document.getElementById("edTitle").textContent="Edit "+catTag(it.c).toLowerCase();
+  document.getElementById("edCurWrap").style.display="block";
+  document.getElementById("edCur").textContent=it.l+" · "+catTag(it.c);
+  document.getElementById("edCats").style.display="none";
+  const cams=SIDES[sec].slots[si].items.filter(x=>x.c==="camera").length;
+  const soleCam = it.c==="camera" && cams<=1;   // always keep a camera on real slots
+  document.getElementById("edRemove").style.display = soleCam ? "none" : "block";
+  document.getElementById("edSearch").value=""; renderCatalog();
+  document.getElementById("editor").classList.add("on"); }
+
+function openAdd(sec,si){ editTarget={sec,si,ii:null,cat:null,mode:"add"};
+  document.getElementById("edTitle").textContent="Add to position "+(si+1);
+  document.getElementById("edCurWrap").style.display="none";
+  document.getElementById("edRemove").style.display="none";
+  renderCatChips(); document.getElementById("edCats").style.display="flex";
+  document.getElementById("edSearch").value=""; document.getElementById("edList").innerHTML="";
+  document.getElementById("editor").classList.add("on"); }
+
+function renderCatChips(){ const el=document.getElementById("edCats"); el.innerHTML="";
+  CATS.forEach(c=>{ const b=document.createElement("div"); b.className="catchip"+(editTarget.cat===c.k?" on":"");
+    b.textContent=c.t; b.onclick=()=>{ editTarget.cat=c.k; renderCatChips(); renderCatalog(); }; el.appendChild(b); }); }
+
+function renderCatalog(){ const cat=editTarget && editTarget.cat; const list=document.getElementById("edList"); list.innerHTML="";
+  if(!cat){ const e=document.createElement("div"); e.className="catrow"; e.style.opacity=".55"; e.textContent="Pick a type above…"; list.appendChild(e); return; }
+  const q=document.getElementById("edSearch").value.toLowerCase();
+  CATALOG[cat].filter(n=>n.toLowerCase().includes(q)).forEach(n=>{ const d=document.createElement("div");
+    d.className="catrow"; d.textContent=n; d.onclick=()=>assign(n,cat); list.appendChild(d); });
+  if(!list.children.length){ const e=document.createElement("div"); e.className="catrow"; e.style.opacity=".55"; e.textContent="No match — use Add New"; list.appendChild(e); } }
+
+function assign(label,cat){ if(!editTarget) return; const {sec,si,ii,mode:m}=editTarget; const sl=SIDES[sec].slots[si];
+  if(m==="edit") sl.items[ii]={c:cat,l:label}; else sl.items.push({c:cat,l:label});
+  sortItems(sl); closeEditor(); openSide(sec); }
+function removeItem(){ if(!editTarget||editTarget.mode!=="edit") return; const {sec,si,ii}=editTarget;
+  SIDES[sec].slots[si].items.splice(ii,1); closeEditor(); openSide(sec); refreshCount(); }
+function addNew(){ const cat=editTarget && editTarget.cat; if(!cat){ alert("Pick a type first."); return; }
+  const v=prompt("New "+cat+" (new release or store-specific):"); if(v && v.trim()) assign(v.trim(),cat); }
+function closeEditor(){ document.getElementById("editor").classList.remove("on"); }
+function closeEditorBg(e){ if(e.target.id==="editor") closeEditor(); }
+
+/* ---------- COMPLETE / COUNT ---------- */
+function toggleComplete(){ done[current]=!done[current]; renderOverview(); setTimeout(()=>go("overview"),160); }
+function updateCompleteBtn(){ const b=document.getElementById("sideComplete");
+  b.classList.toggle("isdone", done[current]); b.textContent = done[current] ? "✓ Done" : "Done"; }
+function refreshCount(){ let n;
+  if(mode==="stock") n=Object.values(outState).filter(Boolean).length;
+  else n=Object.keys(flagState).filter(k=>flagState[k] && k.includes("|f")).length;
+  document.getElementById("outCount").textContent=n; renderOverview(); }
+
+renderOverview();
+</script>
+</body>
+</html>

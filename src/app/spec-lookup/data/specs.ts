@@ -9,7 +9,7 @@ export interface CameraSpec {
   video8kFps?: number;
   video4kFps?: number;
   bitDepth?: string;
-  [key: string]: any;
+  [key: string]: string | number | boolean | undefined;
 }
 
 export interface SpecColumn {

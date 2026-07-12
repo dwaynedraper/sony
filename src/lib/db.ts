@@ -1,8 +1,7 @@
 import "server-only";
-import { MongoClient, type Db } from "mongodb";
+import { MongoClient } from "mongodb";
 
 const uri = process.env.MONGODB_URI;
-const dbName = process.env.MONGODB_DB || "sony-toolkit";
 
 type Globals = typeof globalThis & {
   __mongoClient?: MongoClient;

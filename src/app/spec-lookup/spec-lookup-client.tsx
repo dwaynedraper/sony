@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useMemo } from "react";
-import { cameraSpecs, COLUMNS, CameraSpec } from "./data/specs";
+import { cameraSpecs, COLUMNS } from "./data/specs";
 import { SpecTable } from "./spec-table";
 import styles from "./spec-lookup.module.scss";
 
@@ -59,12 +59,10 @@ export default function SpecLookupClient() {
   const processedData = useMemo(() => {
     const scored = cameraSpecs.map((camera) => {
       let matchCount = 0;
-      let activeFilterCount = 0;
       const failedKeys = new Set<string>();
 
       // Check name (Soft logic / Aliases)
       if (filters["name"]) {
-        activeFilterCount++;
         const search = normalizeName(filters["name"]);
         const target = normalizeName(camera.name);
         if (target.includes(search)) matchCount++;
@@ -75,7 +73,6 @@ export default function SpecLookupClient() {
       const vRes = filters["videoResK"] ? parseInt(filters["videoResK"]) : null;
       const vFps = filters["videoFps"] ? parseInt(filters["videoFps"]) : null;
       if (vRes || vFps) {
-        activeFilterCount++;
         let match = true;
         
         // Logical check: only filter out if the resolution match doesn't meet FPS
@@ -97,13 +94,12 @@ export default function SpecLookupClient() {
         const filterValue = filters[col.key as string];
         if (!filterValue) continue;
 
-        activeFilterCount++;
         const cameraValue = camera[col.key];
         let isMatch = true;
 
         if (col.type === "number") {
           const min = parseFloat(filterValue);
-          if (!isNaN(min)) isMatch = (cameraValue ?? 0) >= min;
+          if (!isNaN(min)) isMatch = Number(cameraValue ?? 0) >= min;
         } else if (col.type === "boolean") {
           const search = filterValue.toLowerCase();
           if (search.startsWith("y")) isMatch = cameraValue === true;
@@ -137,7 +133,8 @@ export default function SpecLookupClient() {
       // TIE BREAKERS: Sort History (Last 3 clicks)
       for (const sort of sortHistory) {
         const key = sort.key;
-        let valA: any, valB: any;
+        let valA: string | number | boolean;
+        let valB: string | number | boolean;
 
         if (key === "video") {
           valA = a.camera.video4kFps ?? 0;
@@ -148,12 +145,14 @@ export default function SpecLookupClient() {
         }
 
         if (valA !== valB) {
-          if (typeof valA === "string") {
-            return sort.direction === "asc" 
-              ? valA.localeCompare(valB) 
+          if (typeof valA === "string" && typeof valB === "string") {
+            return sort.direction === "asc"
+              ? valA.localeCompare(valB)
               : valB.localeCompare(valA);
           }
-          return sort.direction === "desc" ? valB - valA : valA - valB;
+          const numA = Number(valA);
+          const numB = Number(valB);
+          return sort.direction === "desc" ? numB - numA : numA - numB;
         }
       }
       return a.camera.name.localeCompare(b.camera.name);

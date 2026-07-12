@@ -1,49 +1,33 @@
 import { NextResponse } from "next/server";
 import { getDb } from "@/lib/db";
-import { requireSession } from "@/lib/dal";
-import { ObjectId } from "mongodb";
-import type { StoreInfo } from "@/lib/store-storage";
+
+/**
+ * Stores are identified by their Best Buy store number. No auth, no location —
+ * the toolkit is open and none of this data is sensitive. Everything a store
+ * owns is namespaced by its number, so stores never collide.
+ */
 
 export async function GET() {
-  const session = await requireSession();
   const db = await getDb();
   const stores = await db
-    .collection("stores")
-    .find({ ownerId: session.userId })
-    .sort({ createdAt: 1 })
+    .collection("tableStores")
+    .find({}, { projection: { _id: 0, number: 1, nickname: 1 } })
+    .sort({ number: 1 })
     .toArray();
-
   return NextResponse.json(stores);
 }
 
 export async function POST(req: Request) {
-  const session = await requireSession();
   const body = await req.json();
-  const { id, nickname, address, lat, lng } = body;
-
-  if (!id) {
-    return NextResponse.json({ error: "Store ID is required" }, { status: 400 });
+  const number = String(body?.number ?? "").trim();
+  if (!number) {
+    return NextResponse.json({ error: "Missing store number" }, { status: 400 });
   }
 
+  const set: Record<string, unknown> = { number, updatedAt: new Date() };
+  if (typeof body.nickname === "string") set.nickname = body.nickname;
+
   const db = await getDb();
-  const now = new Date();
-
-  const store: Partial<StoreInfo> & { ownerId: string; createdAt: Date; updatedAt: Date } = {
-    ownerId: session.userId,
-    id,
-    nickname,
-    address,
-    lat,
-    lng,
-    createdAt: now,
-    updatedAt: now,
-  };
-
-  await db.collection("stores").updateOne(
-    { ownerId: session.userId, id },
-    { $set: store },
-    { upsert: true }
-  );
-
+  await db.collection("tableStores").updateOne({ number }, { $set: set }, { upsert: true });
   return NextResponse.json({ ok: true });
 }

@@ -1,4 +1,3 @@
-import Link from "next/link";
 import { notFound } from "next/navigation";
 import Navbar from "@/components/navbar";
 import SpecComparisonTable from "@/components/spec-comparison-table";
@@ -61,7 +60,7 @@ export default async function CageFightPage({ params }: PageProps) {
             <div className="md:col-span-2 bg-surface/50 border border-border rounded-xl p-6 flex flex-col justify-center">
               <h3 className="text-xs font-black uppercase tracking-widest text-text-muted mb-2">Sales Tip</h3>
               <p className="text-sm text-text-secondary italic leading-relaxed">
-                "Acknowledging the Canon's 'vibe' is fine, but remind the customer that a blurry photo kills the vibe instantly. Only Sony guarantees the shot is in focus."
+                &ldquo;Acknowledging the Canon&rsquo;s &lsquo;vibe&rsquo; is fine, but remind the customer that a blurry photo kills the vibe instantly. Only Sony guarantees the shot is in focus.&rdquo;
               </p>
             </div>
           </div>
@@ -100,7 +99,7 @@ export default async function CageFightPage({ params }: PageProps) {
             <div className="bg-background/40 backdrop-blur-sm border border-border/50 rounded-xl p-6 relative">
               <div className="absolute top-0 left-0 w-1 h-full bg-accent rounded-full" />
               <p className="text-lg text-foreground font-bold leading-relaxed italic">
-                "{fight.salesPitch}"
+                &ldquo;{fight.salesPitch}&rdquo;
               </p>
             </div>
 

@@ -1,6 +1,5 @@
 import { Metadata } from "next";
 import SpecLookupClient from "./spec-lookup-client";
-import Navbar from "@/components/navbar";
 import BackButton from "@/components/back-button";
 
 export const metadata: Metadata = {

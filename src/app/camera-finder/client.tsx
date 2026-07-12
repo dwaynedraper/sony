@@ -92,7 +92,7 @@ export default function CameraFinderClient() {
     return getRecommendations(state);
   }, [isResults, state]);
 
-  const { submit, isLoading, object, error } = useObject({
+  const { submit, isLoading, object } = useObject({
     api: '/api/generate-rationale',
     schema: z.object({
       bestReason: z.object({ text: z.string(), tradeoff: z.string() }),
@@ -154,19 +154,6 @@ export default function CameraFinderClient() {
       </div>
     </div>
   );
-
-  const canProceed = () => {
-    switch (state.step) {
-      case 1: return !!state.focus;
-      case 2: return !!state.useCase;
-      case 3: return !!state.skill;
-      case 4: return !!state.intent;
-      case 5: return !!state.budget;
-      case 6: return !!state.formFactor;
-      case 7: return true; // Multi-select can be empty
-      default: return false;
-    }
-  };
 
   let genreOptions = HYBRID_GENRE_OPTIONS;
   if (state.focus === "video") genreOptions = VIDEO_GENRE_OPTIONS;
