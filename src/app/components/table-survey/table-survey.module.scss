@@ -107,6 +107,15 @@
 .trow { background: var(--panel); border: 1px solid var(--line); border-radius: 14px; padding: 10px 10px 6px; }
 .trow h4 { margin: 0 0 9px; font-size: 11px; letter-spacing: .1em; text-transform: uppercase; color: var(--muted); }
 .lane { display: flex; gap: 8px; overflow-x: auto; padding-bottom: 6px; }
+/* One shelf position: the lens, plus its reorder arrows in edit mode. */
+.lensCol { flex: 0 0 auto; display: flex; flex-direction: column; gap: 5px; }
+.arrows { display: flex; gap: 4px; }
+.arrowBtn { flex: 1; border: 1px solid var(--tileEdge); background: var(--panel2); color: var(--muted);
+  font-size: 13px; font-weight: 800; padding: 5px 0; border-radius: 7px; cursor: pointer; transition: .12s; }
+.arrowBtn:hover:not(:disabled) { color: var(--accent); border-color: var(--accent); }
+.arrowBtn:active:not(:disabled) { transform: scale(.92); }
+.arrowBtn:disabled { opacity: .25; cursor: not-allowed; }
+
 .lens { flex: 0 0 auto; width: 92px; background: var(--tile); border: 1px solid var(--tileEdge); border-radius: 10px;
   padding: 10px 6px; text-align: center; cursor: pointer; transition: .12s; font-size: 11px; font-weight: 700; }
 .lens:active { transform: scale(.97); }

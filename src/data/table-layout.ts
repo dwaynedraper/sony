@@ -25,6 +25,12 @@ export type ItemCategory =
   | "tablet";
 
 export interface TableItem {
+  /**
+   * Stable identity. Out-of-stock marks key off THIS, never the array index —
+   * otherwise reordering a row (or adding/removing an item) would silently
+   * re-attach a mark to a different product.
+   */
+  id: string;
   category: ItemCategory;
   /** Everyday label shown on the square, e.g. "ZV-E10 II" or "w/16-50" */
   label: string;
@@ -33,7 +39,16 @@ export interface TableItem {
 }
 
 export interface TableSlot {
+  /** Stable identity — display issues key off this, not the slot's position. */
+  id: string;
   items: TableItem[];
+}
+
+/** ID for an item/slot created at runtime in Edit Mode. */
+export function newId(): string {
+  return typeof crypto !== "undefined" && "randomUUID" in crypto
+    ? crypto.randomUUID()
+    : `x${Math.random().toString(36).slice(2)}${Date.now().toString(36)}`;
 }
 
 export interface TableSection {
@@ -88,32 +103,56 @@ export function sortItems(slot: TableSlot): TableSlot {
 }
 
 /**
- * Re-apply the sort rule across a whole layout. Run on every load so a layout
- * saved under an older rule (or hand-edited) still comes out in the right order.
+ * Re-apply the sort rule across a whole layout, and backfill any missing IDs.
+ *
+ * Runs on every load, so a layout saved under an older rule still comes out in
+ * the right order — and a layout saved before IDs existed gets them. The
+ * backfill is DETERMINISTIC (position-derived) rather than random, so an
+ * un-saved legacy layout produces the same IDs on every load and its
+ * out-of-stock marks stay attached to the right products.
  */
 export function normalizeLayout(layout: TableLayout): TableLayout {
   const sections = [layout.faces.left, layout.faces.center, layout.faces.right, ...layout.totem];
-  for (const section of sections) for (const slot of section.slots) sortItems(slot);
+  for (const section of sections) {
+    section.slots.forEach((slot, si) => {
+      if (!slot.id) slot.id = `${section.id}#${si}`;
+      slot.items.forEach((item, ii) => {
+        if (!item.id) item.id = `${section.id}#${si}#${ii}`;
+      });
+      sortItems(slot);
+    });
+  }
   return layout;
 }
 
 /** Convert a raw display-slot into a TableSlot of items. */
-function slotToItems(name: string, options: { label: string; model: string }[]): TableSlot {
+function slotToItems(
+  sectionId: string,
+  slotIdx: number,
+  name: string,
+  options: { label: string; model: string }[]
+): TableSlot {
+  const slotId = `${sectionId}#${slotIdx}`;
   if (options.length === 0) {
     // Display-only physical slot: a display box or the demo tablet.
     const category: ItemCategory = /tablet/i.test(name) ? "tablet" : "display";
-    return { items: [{ category, label: name, model: "" }] };
+    return { id: slotId, items: [{ id: `${slotId}#0`, category, label: name, model: "" }] };
   }
-  const items: TableItem[] = options.map((o) => ({
+  const items: TableItem[] = options.map((o, ii) => ({
+    id: `${slotId}#${ii}`,
     category: classify(o.label, o.model),
     label: o.label,
     model: o.model,
   }));
-  return sortItems({ items });
+  return sortItems({ id: slotId, items });
 }
 
-function sectionToTable(id: string, title: string, slots: { name: string; options: { label: string; model: string }[] }[]): TableSection {
-  return { id, title, slots: slots.map((s) => slotToItems(s.name, s.options)) };
+function sectionToTable(
+  id: string,
+  title: string,
+  slots: { name: string; options: { label: string; model: string }[] }[]
+): TableSection {
+  return { id, title, slots: slots.map((s, i) => slotToItems(id, i, s.name, s.options)) };
 }
 
 /** Build a fresh default layout from the canonical display-slots data. */
@@ -127,11 +166,16 @@ export function buildDefaultLayout(): TableLayout {
   const totem: TableSection[] = lensTotem.map((row) => ({
     id: row.id,
     title: row.title,
-    slots: row.slots.map((s) =>
+    slots: row.slots.map((s, si) =>
       s.options.length === 0
-        ? { items: [{ category: "display" as ItemCategory, label: s.name, model: "" }] }
+        ? {
+            id: `${row.id}#${si}`,
+            items: [{ id: `${row.id}#${si}#0`, category: "display" as ItemCategory, label: s.name, model: "" }],
+          }
         : sortItems({
-            items: s.options.map((o) => ({
+            id: `${row.id}#${si}`,
+            items: s.options.map((o, ii) => ({
+              id: `${row.id}#${si}#${ii}`,
               category: classify(o.label, o.model),
               label: o.label,
               model: o.model,

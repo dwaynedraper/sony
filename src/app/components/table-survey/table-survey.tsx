@@ -4,6 +4,7 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import {
   sortItems,
   normalizeLayout,
+  newId,
   CATEGORY_LABELS,
   type TableLayout,
   type TableSection,
@@ -311,16 +312,28 @@ export default function TableSurvey({ mode }: { mode: Mode }) {
     updateLayout((draft) => {
       const section = sectionOf(draft, sec);
       if (kind === "edit" && itemIdx != null) {
-        section.slots[slotIdx].items[itemIdx] = { category: cat, label, model };
+        // Swapping the product in place — a fresh ID, because it's a different
+        // product now and must not inherit the old one's out-of-stock mark.
+        section.slots[slotIdx].items[itemIdx] = { id: newId(), category: cat, label, model };
         sortItems(section.slots[slotIdx]);
       } else if (sec.type === "totem" && slotIdx === -1) {
-        section.slots.push({ items: [{ category: cat, label, model }] });
+        section.slots.push({ id: newId(), items: [{ id: newId(), category: cat, label, model }] });
       } else {
-        section.slots[slotIdx].items.push({ category: cat, label, model });
+        section.slots[slotIdx].items.push({ id: newId(), category: cat, label, model });
         sortItems(section.slots[slotIdx]);
       }
     });
     closeEditor();
+  }
+
+  /** Shuffle a lens left or right within its shelf. Rows never change. */
+  function moveTotemSlot(row: number, from: number, to: number) {
+    updateLayout((draft) => {
+      const slots = draft.totem[row].slots;
+      if (to < 0 || to >= slots.length) return;
+      const [moved] = slots.splice(from, 1);
+      slots.splice(to, 0, moved);
+    });
   }
   function removeItem() {
     if (!editor || editor.kind !== "edit" || editor.itemIdx == null) return;
@@ -365,13 +378,13 @@ export default function TableSurvey({ mode }: { mode: Mode }) {
     const sections = [layout.faces.left, layout.faces.center, layout.faces.right, ...layout.totem];
     const parts: string[] = [];
     for (const sec of sections) {
-      sec.slots.forEach((slot, si) => {
+      sec.slots.forEach((slot) => {
         if (mode === "stock") {
-          slot.items.forEach((it, ii) => {
-            if (stock[`${sec.id}:${si}:${ii}`]) parts.push(it.model ? `${it.label} (${it.model})` : it.label);
+          slot.items.forEach((it) => {
+            if (stock[it.id]) parts.push(it.model ? `${it.label} (${it.model})` : it.label);
           });
         } else {
-          const flags = issues[`${sec.id}:${si}`];
+          const flags = issues[slot.id];
           if (flags) {
             const cam = slot.items.find((i) => i.category === "camera") ?? slot.items[0];
             const on = ISSUE_FLAGS.filter((f) => flags[f.key]).map((f) => f.label);
@@ -564,19 +577,19 @@ export default function TableSurvey({ mode }: { mode: Mode }) {
           <div className={styles.scrollNote}>← scroll to walk the side →</div>
           <div className={styles.strip}>
             {layout.faces[side].slots.map((slot, slotIdx) => {
-              const issueKey = `${layout.faces[side].id}:${slotIdx}`;
+              const issueKey = slot.id; // stable — never the array index
               const flags = issues[issueKey];
               const hasCamera = slot.items.some((i) => i.category === "camera");
               return (
-                <div className={styles.col} key={slotIdx}>
+                <div className={styles.col} key={slot.id}>
                   <div className={styles.pos}>{slotIdx + 1}</div>
                   <div className={styles.stack}>
                     {slot.items.map((it, itemIdx) => {
-                      const key = `${layout.faces[side].id}:${slotIdx}:${itemIdx}`;
+                      const key = it.id; // stable — marks follow the product
                       const dim = mode === "issues" && !editMode;
                       return (
                         <div
-                          key={itemIdx}
+                          key={it.id}
                           className={`${styles.sq} ${stock[key] ? styles.sqOut : ""} ${editMode ? styles.editable : ""} ${dim ? styles.dimmed : ""}`}
                           onClick={() => {
                             if (editMode) openEdit(secRef, slotIdx, itemIdx);
@@ -622,28 +635,50 @@ export default function TableSurvey({ mode }: { mode: Mode }) {
               <div className={styles.trow} key={row.id}>
                 <h4>Row {ri + 1}</h4>
                 <div className={styles.lane}>
-                  {row.slots.map((slot, slotIdx) =>
-                    slot.items.map((it, itemIdx) => {
-                      // Graphics-only shelf labels are hidden unless you're editing.
-                      if (!it.model && !editMode) return null;
-                      const key = `${row.id}:${slotIdx}:${itemIdx}`;
-                      const dim = mode === "issues" && !editMode;
-                      return (
-                        <div
-                          key={key}
-                          className={`${styles.lens} ${stock[key] ? styles.lensOut : ""} ${editMode ? styles.editable : ""} ${dim ? styles.dimmed : ""}`}
-                          onClick={() => {
-                            if (editMode) openEdit({ type: "totem", row: ri }, slotIdx, itemIdx);
-                            else if (mode === "stock") toggleStock(key);
-                          }}
-                        >
-                          <span className={styles.lensLabel}>{it.label.replace(/^(FE |E )/, "")}</span>
-                        </div>
-                      );
-                    })
-                  )}
+                  {row.slots.map((slot, slotIdx) => {
+                    // Graphics-only shelf labels are hidden unless you're editing.
+                    const visible = slot.items.filter((it) => it.model || editMode);
+                    if (!visible.length) return null;
+                    const dim = mode === "issues" && !editMode;
+                    return (
+                      <div className={styles.lensCol} key={slot.id}>
+                        {visible.map((it) => (
+                          <div
+                            key={it.id}
+                            className={`${styles.lens} ${stock[it.id] ? styles.lensOut : ""} ${editMode ? styles.editable : ""} ${dim ? styles.dimmed : ""}`}
+                            onClick={() => {
+                              if (editMode) openEdit({ type: "totem", row: ri }, slotIdx, slot.items.indexOf(it));
+                              else if (mode === "stock") toggleStock(it.id);
+                            }}
+                          >
+                            <span className={styles.lensLabel}>{it.label.replace(/^(FE |E )/, "")}</span>
+                          </div>
+                        ))}
+                        {editMode && (
+                          <div className={styles.arrows}>
+                            <button
+                              className={styles.arrowBtn}
+                              disabled={slotIdx === 0}
+                              onClick={() => moveTotemSlot(ri, slotIdx, slotIdx - 1)}
+                              aria-label="Move left"
+                            >
+                              ←
+                            </button>
+                            <button
+                              className={styles.arrowBtn}
+                              disabled={slotIdx === row.slots.length - 1}
+                              onClick={() => moveTotemSlot(ri, slotIdx, slotIdx + 1)}
+                              aria-label="Move right"
+                            >
+                              →
+                            </button>
+                          </div>
+                        )}
+                      </div>
+                    );
+                  })}
                   {editMode && (
-                    <button className={styles.addSq} style={{ minWidth: 48 }}
+                    <button className={styles.addSq} style={{ minWidth: 48, alignSelf: "flex-start", height: 56 }}
                       onClick={() => openAdd({ type: "totem", row: ri }, -1)}>+</button>
                   )}
                 </div>
