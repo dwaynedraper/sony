@@ -225,6 +225,7 @@ export function mergeKnownStores(remote: StoreRef[]): StoreRef[] {
 export interface CatalogEntry {
   label: string;
   model: string;
+  sku: string;
   category: ItemCategory;
 }
 
@@ -233,24 +234,33 @@ export interface CatalogEntry {
  * by category: a rep should be able to open the sheet and type "55-210"
  * straight away, without picking "lens" first. The category rides along with
  * the entry, so the slot still sorts itself correctly on drop.
+ *
+ * Pass the store's current layout and anything they've added themselves shows
+ * up too — add the A7 VI once, then place it anywhere without retyping it.
  */
-export function buildCatalog(): CatalogEntry[] {
+export function buildCatalog(storeLayout?: TableLayout | null): CatalogEntry[] {
   const seen = new Map<string, CatalogEntry>();
 
   const add = (e: CatalogEntry) => {
     const key = `${e.category}|${e.label}`;
-    if (!seen.has(key)) seen.set(key, e);
+    const existing = seen.get(key);
+    // A later entry can fill in a model/SKU the earlier one was missing.
+    if (!existing) seen.set(key, e);
+    else seen.set(key, { ...existing, model: existing.model || e.model, sku: existing.sku || e.sku });
   };
 
-  const def = buildDefaultLayout();
-  const sections = [def.faces.left, def.faces.center, def.faces.right, ...def.totem];
-  for (const sec of sections)
-    for (const slot of sec.slots)
-      for (const it of slot.items)
-        add({ label: it.label, model: it.model, category: it.category });
+  const harvest = (l: TableLayout) => {
+    for (const sec of [l.faces.left, l.faces.center, l.faces.right, ...l.totem])
+      for (const slot of sec.slots)
+        for (const it of slot.items)
+          add({ label: it.label, model: it.model, sku: it.sku ?? "", category: it.category });
+  };
 
-  add({ label: "Display Box", model: "", category: "display" });
-  add({ label: "Demo Tablet", model: "", category: "tablet" });
+  harvest(buildDefaultLayout());
+  if (storeLayout) harvest(storeLayout);
+
+  add({ label: "Display Box", model: "", sku: "", category: "display" });
+  add({ label: "Demo Tablet", model: "", sku: "", category: "tablet" });
 
   return [...seen.values()].sort(
     (a, b) =>

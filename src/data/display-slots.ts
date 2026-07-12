@@ -179,32 +179,16 @@ export const lensTotem: DisplaySection[] = [
     title: "Lens Totem — Row 1",
     slots: [
       {
-        name: "Macro",
-        options: [], // graphics label only
-      },
-      {
         name: "90mm f/2.8 G",
         options: [{ label: "FE 90mm f/2.8 Macro G", model: "SEL90M28G" }],
-      },
-      {
-        name: "Non-FF Prime",
-        options: [], // graphics label only
       },
       {
         name: "PZ 10-20",
         options: [{ label: "E PZ 10-20mm f/4 G", model: "SELP1020G" }],
       },
       {
-        name: "Non-FF Ultra-Wide",
-        options: [], // graphics label only
-      },
-      {
         name: "E 50mm f/1.8",
         options: [{ label: "E 50mm f/1.8 OSS", model: "SEL50F18/B" }],
-      },
-      {
-        name: "Non-FF Telephoto",
-        options: [], // graphics label only
       },
       {
         name: "E 55-210",
@@ -220,10 +204,6 @@ export const lensTotem: DisplaySection[] = [
     id: "lens-row-2",
     title: "Lens Totem — Row 2",
     slots: [
-      {
-        name: "Prime",
-        options: [], // graphics label only
-      },
       {
         name: "16mm f/1.8 G",
         options: [{ label: "FE 16mm f/1.8 G", model: "SEL16F18G" }],
@@ -255,10 +235,6 @@ export const lensTotem: DisplaySection[] = [
     title: "Lens Totem — Row 3",
     slots: [
       {
-        name: "Ultra-Wide",
-        options: [], // graphics label only
-      },
-      {
         name: "PZ 16-35 f/4",
         options: [{ label: "FE PZ 16-35mm f/4 G", model: "SELP1635G" }],
       },
@@ -271,16 +247,8 @@ export const lensTotem: DisplaySection[] = [
         options: [{ label: "FE 16-35mm f/2.8 GM II", model: "SEL1635GM2" }],
       },
       {
-        name: "Standard Zoom",
-        options: [], // graphics label only
-      },
-      {
         name: "24-70 GM",
         options: [{ label: "FE 24-70mm f/2.8 GM", model: "SEL2470GM" }],
-      },
-      {
-        name: "Telephoto",
-        options: [], // graphics label only
       },
       {
         name: "70-200 GM",

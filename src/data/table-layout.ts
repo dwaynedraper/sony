@@ -34,8 +34,10 @@ export interface TableItem {
   category: ItemCategory;
   /** Everyday label shown on the square, e.g. "ZV-E10 II" or "w/16-50" */
   label: string;
-  /** Sony model number for the OOS report. Empty for display/tablet. */
+  /** Sony model number, e.g. "ILCE-7M4/B". Empty for display/tablet. */
   model: string;
+  /** Best Buy SKU, e.g. "6512345". Empty unless someone has filled it in. */
+  sku: string;
 }
 
 export interface TableSlot {
@@ -88,10 +90,17 @@ export const CATEGORY_ORDER: ItemCategory[] = [
   "tablet",
 ];
 
-/** Classify a display-slot option into an item category. */
+/**
+ * Classify a display-slot option into an item category.
+ *
+ * Order matters. "FX30 w/Handle" is a camera KIT (body bundled with the XLR
+ * handle), not an accessory — so we key off the model prefix for real
+ * accessories (ECM mics) and let anything bundled ("w/", "kit", "dual") fall
+ * through to kit.
+ */
 function classify(label: string, model: string): ItemCategory {
   if (model.startsWith("SEL")) return "lens";
-  if (model.startsWith("ECM") || /handle/i.test(label)) return "accessory";
+  if (model.startsWith("ECM")) return "accessory";
   if (/w\/|kit|dual/i.test(label)) return "kit";
   return "camera";
 }
@@ -118,6 +127,7 @@ export function normalizeLayout(layout: TableLayout): TableLayout {
       if (!slot.id) slot.id = `${section.id}#${si}`;
       slot.items.forEach((item, ii) => {
         if (!item.id) item.id = `${section.id}#${si}#${ii}`;
+        if (item.sku == null) item.sku = ""; // backfill layouts saved before SKUs existed
       });
       sortItems(slot);
     });
@@ -136,13 +146,14 @@ function slotToItems(
   if (options.length === 0) {
     // Display-only physical slot: a display box or the demo tablet.
     const category: ItemCategory = /tablet/i.test(name) ? "tablet" : "display";
-    return { id: slotId, items: [{ id: `${slotId}#0`, category, label: name, model: "" }] };
+    return { id: slotId, items: [{ id: `${slotId}#0`, category, label: name, model: "", sku: "" }] };
   }
   const items: TableItem[] = options.map((o, ii) => ({
     id: `${slotId}#${ii}`,
     category: classify(o.label, o.model),
     label: o.label,
     model: o.model,
+    sku: "",
   }));
   return sortItems({ id: slotId, items });
 }
@@ -161,26 +172,22 @@ export function buildDefaultLayout(): TableLayout {
   const face = (id: string, title: string) =>
     sectionToTable(id, title, (bySide[id]?.slots ?? []));
 
-  // The lens totem keeps its own "graphics label only" slots (Macro, Prime, …)
-  // as items so the rows still read correctly; they carry no model.
+  // The totem is lenses only. The shelf category cards (Macro, Prime, Telephoto…)
+  // are printed graphics, not stock — they aren't tracked and aren't shown.
   const totem: TableSection[] = lensTotem.map((row) => ({
     id: row.id,
     title: row.title,
     slots: row.slots.map((s, si) =>
-      s.options.length === 0
-        ? {
-            id: `${row.id}#${si}`,
-            items: [{ id: `${row.id}#${si}#0`, category: "display" as ItemCategory, label: s.name, model: "" }],
-          }
-        : sortItems({
-            id: `${row.id}#${si}`,
-            items: s.options.map((o, ii) => ({
-              id: `${row.id}#${si}#${ii}`,
-              category: classify(o.label, o.model),
-              label: o.label,
-              model: o.model,
-            })),
-          })
+      sortItems({
+        id: `${row.id}#${si}`,
+        items: s.options.map((o, ii) => ({
+          id: `${row.id}#${si}#${ii}`,
+          category: classify(o.label, o.model),
+          label: o.label,
+          model: o.model,
+          sku: "",
+        })),
+      })
     ),
   }));
 
@@ -192,6 +199,44 @@ export function buildDefaultLayout(): TableLayout {
     },
     totem,
   };
+}
+
+/** A lens name broken into the only parts worth showing on a shelf tile. */
+export interface LensName {
+  focal: string; // "70-200mm" | "90mm" | ""  ("" = didn't parse)
+  aperture: string; // "f/2.8" | "f/4.5-6.3" | ""
+  variant: string; // "GM II" | "G" | "Macro G" | ""
+}
+
+/**
+ * "FE 70-200mm f/2.8 GM II"  ->  70-200mm · f/2.8 · GM II
+ * "E 55-210mm f/4.5-6.3 OSS" ->  55-210mm · f/4.5-6.3
+ *
+ * The variant (GM, GM II, Macro…) is kept because it's the ONLY thing telling
+ * the 70-200 GM apart from the 70-200 GM II — same focal, same aperture, two
+ * different products on the shelf. The UI shows it only when it's needed to
+ * break a tie. OSS is stabilisation, not an identity, so it's dropped.
+ *
+ * Anything that isn't a lens (a custom item, a body) returns empty focal so the
+ * caller can fall back to the raw label rather than rendering a blank tile.
+ */
+export function parseLensName(label: string): LensName {
+  const focalM = label.match(/(\d+(?:\.\d+)?(?:\s*-\s*\d+(?:\.\d+)?)?)\s*mm/i);
+  const apM = label.match(/f\/\s*(\d+(?:\.\d+)?(?:\s*-\s*\d+(?:\.\d+)?)?)/i);
+
+  const focal = focalM ? `${focalM[1].replace(/\s+/g, "")}mm` : "";
+  const aperture = apM ? `f/${apM[1].replace(/\s+/g, "")}` : "";
+
+  let variant = "";
+  if (apM && apM.index != null) {
+    variant = label
+      .slice(apM.index + apM[0].length)
+      .replace(/\bOSS\b/gi, "")
+      .replace(/\s+/g, " ")
+      .trim();
+  }
+
+  return { focal, aperture, variant };
 }
 
 export const CATEGORY_LABELS: Record<ItemCategory, string> = {

@@ -5,6 +5,7 @@ import {
   sortItems,
   normalizeLayout,
   newId,
+  parseLensName,
   CATEGORY_LABELS,
   type TableLayout,
   type TableSection,
@@ -102,7 +103,13 @@ function StorePad({
   );
 }
 
-export default function TableSurvey({ mode }: { mode: Mode }) {
+/**
+ * `mode` is only the STARTING mode (set by the route). Once you're in, you can
+ * flip between stock and issues in place — you keep your store, your position
+ * on the table, and everything you've already marked.
+ */
+export default function TableSurvey({ mode: initialMode }: { mode: Mode }) {
+  const [mode, setMode] = useState<Mode>(initialMode);
   const [ready, setReady] = useState(false);
   const [store, setStore] = useState<StoreRef | null>(null);
   const [showPicker, setShowPicker] = useState(false);
@@ -121,7 +128,9 @@ export default function TableSurvey({ mode }: { mode: Mode }) {
   const [editMode, setEditMode] = useState(false);
   const [editor, setEditor] = useState<EditorState | null>(null);
   const [editorSearch, setEditorSearch] = useState("");
-  const [newItem, setNewItem] = useState<{ name: string; cat: ItemCategory | null } | null>(null);
+  const [newItem, setNewItem] = useState<
+    { name: string; model: string; sku: string; cat: ItemCategory | null } | null
+  >(null);
   const [report, setReport] = useState("");
   const [copied, setCopied] = useState(false);
 
@@ -135,7 +144,8 @@ export default function TableSurvey({ mode }: { mode: Mode }) {
   const [draftSchedule, setDraftSchedule] = useState<WeekSchedule>(["", "", "", "", "", "", ""]);
   const [scheduleSaved, setScheduleSaved] = useState(false);
 
-  const catalog = useMemo(() => buildCatalog(), []);
+  // Rebuilt when the layout changes, so items this store added are searchable too.
+  const catalog = useMemo(() => buildCatalog(layout), [layout]);
   const todayIdx = new Date().getDay();
 
   // One list, every category. Type "55-210" (or "55210") and it just finds it —
@@ -306,20 +316,21 @@ export default function TableSurvey({ mode }: { mode: Mode }) {
     searchRef.current?.blur();
   }
 
-  function assignItem(label: string, model: string, cat: ItemCategory) {
+  function assignItem(label: string, model: string, sku: string, cat: ItemCategory) {
     if (!editor) return;
     const { sec, slotIdx, itemIdx, kind } = editor;
     updateLayout((draft) => {
       const section = sectionOf(draft, sec);
+      const item = { id: newId(), category: cat, label, model, sku };
       if (kind === "edit" && itemIdx != null) {
-        // Swapping the product in place — a fresh ID, because it's a different
+        // Swapping the product in place gets a fresh ID — it's a different
         // product now and must not inherit the old one's out-of-stock mark.
-        section.slots[slotIdx].items[itemIdx] = { id: newId(), category: cat, label, model };
+        section.slots[slotIdx].items[itemIdx] = item;
         sortItems(section.slots[slotIdx]);
       } else if (sec.type === "totem" && slotIdx === -1) {
-        section.slots.push({ id: newId(), items: [{ id: newId(), category: cat, label, model }] });
+        section.slots.push({ id: newId(), items: [item] });
       } else {
-        section.slots[slotIdx].items.push({ id: newId(), category: cat, label, model });
+        section.slots[slotIdx].items.push(item);
         sortItems(section.slots[slotIdx]);
       }
     });
@@ -350,11 +361,16 @@ export default function TableSurvey({ mode }: { mode: Mode }) {
   /** Start a custom item, pre-filled with whatever's already typed. */
   function startNewItem() {
     if (!editor) return;
-    setNewItem({ name: editorSearch.trim(), cat: editor.kind === "edit" ? editor.cat : null });
+    setNewItem({
+      name: editorSearch.trim(),
+      model: "",
+      sku: "",
+      cat: editor.kind === "edit" ? editor.cat : null,
+    });
   }
   function saveNewItem() {
     if (!newItem?.name.trim() || !newItem.cat) return;
-    assignItem(newItem.name.trim(), "", newItem.cat);
+    assignItem(newItem.name.trim(), newItem.model.trim(), newItem.sku.trim(), newItem.cat);
   }
 
   /** A face slot always keeps a camera: hide Remove on the last camera square. */
@@ -381,6 +397,7 @@ export default function TableSurvey({ mode }: { mode: Mode }) {
       sec.slots.forEach((slot) => {
         if (mode === "stock") {
           slot.items.forEach((it) => {
+            // SKU is captured for a future feature — deliberately kept out of the report.
             if (stock[it.id]) parts.push(it.model ? `${it.label} (${it.model})` : it.label);
           });
         } else {
@@ -507,6 +524,22 @@ export default function TableSurvey({ mode }: { mode: Mode }) {
             Change
           </button>
         </div>
+
+        {/* Swap jobs without losing your place on the table. */}
+        <div className={styles.modeRow}>
+          <button
+            className={`${styles.modeBtn} ${mode === "stock" ? styles.modeOn : ""}`}
+            onClick={() => { setMode("stock"); setReport(""); }}
+          >
+            Out of Stock
+          </button>
+          <button
+            className={`${styles.modeBtn} ${mode === "issues" ? styles.modeOn : ""}`}
+            onClick={() => { setMode("issues"); setReport(""); }}
+          >
+            Display Issues
+          </button>
+        </div>
       </div>
 
       {view === "overview" && (
@@ -631,18 +664,31 @@ export default function TableSurvey({ mode }: { mode: Mode }) {
           </div>
           {editMode && <div className={styles.editBanner}>Edit mode — tap a lens to change or remove it, or use the green + to add.</div>}
           <div className={styles.totemRows}>
-            {layout.totem.map((row, ri) => (
+            {layout.totem.map((row, ri) => {
+              // Two lenses in a row can strip to the same focal + aperture (the
+              // 70-200 GM vs GM II). Only then do we show the variant.
+              const seen = new Map<string, number>();
+              for (const s of row.slots) {
+                for (const it of s.items) {
+                  const p = parseLensName(it.label);
+                  if (!p.focal) continue;
+                  const k = `${p.focal}|${p.aperture}`;
+                  seen.set(k, (seen.get(k) ?? 0) + 1);
+                }
+              }
+              return (
               <div className={styles.trow} key={row.id}>
                 <h4>Row {ri + 1}</h4>
                 <div className={styles.lane}>
                   {row.slots.map((slot, slotIdx) => {
-                    // Graphics-only shelf labels are hidden unless you're editing.
-                    const visible = slot.items.filter((it) => it.model || editMode);
-                    if (!visible.length) return null;
+                    if (!slot.items.length) return null;
                     const dim = mode === "issues" && !editMode;
                     return (
                       <div className={styles.lensCol} key={slot.id}>
-                        {visible.map((it) => (
+                        {slot.items.map((it) => {
+                          const p = parseLensName(it.label);
+                          const collides = (seen.get(`${p.focal}|${p.aperture}`) ?? 0) > 1;
+                          return (
                           <div
                             key={it.id}
                             className={`${styles.lens} ${stock[it.id] ? styles.lensOut : ""} ${editMode ? styles.editable : ""} ${dim ? styles.dimmed : ""}`}
@@ -651,9 +697,20 @@ export default function TableSurvey({ mode }: { mode: Mode }) {
                               else if (mode === "stock") toggleStock(it.id);
                             }}
                           >
-                            <span className={styles.lensLabel}>{it.label.replace(/^(FE |E )/, "")}</span>
+                            {p.focal ? (
+                              <>
+                                <span className={styles.lensFocal}>{p.focal}</span>
+                                {p.aperture && <span className={styles.lensAperture}>{p.aperture}</span>}
+                                {collides && p.variant && (
+                                  <span className={styles.lensVariant}>{p.variant}</span>
+                                )}
+                              </>
+                            ) : (
+                              <span className={styles.lensLabel}>{it.label}</span>
+                            )}
                           </div>
-                        ))}
+                          );
+                        })}
                         {editMode && (
                           <div className={styles.arrows}>
                             <button
@@ -683,7 +740,8 @@ export default function TableSurvey({ mode }: { mode: Mode }) {
                   )}
                 </div>
               </div>
-            ))}
+              );
+            })}
           </div>
         </>
       )}
@@ -725,13 +783,32 @@ export default function TableSurvey({ mode }: { mode: Mode }) {
 
             {newItem ? (
               <div className={styles.newItem}>
+                <label className={styles.fieldLabel}>Name</label>
                 <input
                   className={styles.search}
-                  placeholder="Name (e.g. A7 VI Body)"
+                  placeholder="A7 VI Body"
                   value={newItem.name}
                   onChange={(e) => setNewItem({ ...newItem, name: e.target.value })}
                   autoComplete="off"
                 />
+                <label className={styles.fieldLabel}>Sony model number</label>
+                <input
+                  className={styles.search}
+                  placeholder="ILCE-7M6/B"
+                  value={newItem.model}
+                  onChange={(e) => setNewItem({ ...newItem, model: e.target.value })}
+                  autoComplete="off"
+                />
+                <label className={styles.fieldLabel}>Best Buy SKU</label>
+                <input
+                  className={styles.search}
+                  placeholder="6512345"
+                  inputMode="numeric"
+                  value={newItem.sku}
+                  onChange={(e) => setNewItem({ ...newItem, sku: e.target.value })}
+                  autoComplete="off"
+                />
+                <label className={styles.fieldLabel}>Type</label>
                 <div className={styles.catChips}>
                   {CATEGORIES.map((c) => (
                     <div
@@ -764,10 +841,10 @@ export default function TableSurvey({ mode }: { mode: Mode }) {
                       <div
                         key={`${r.category}|${r.label}`}
                         className={styles.catRow}
-                        onClick={() => assignItem(r.label, r.model, r.category)}
+                        onClick={() => assignItem(r.label, r.model, r.sku, r.category)}
                       >
                         <span>{r.label}</span>
-                        {r.model && <small>{r.model}</small>}
+                        {(r.model || r.sku) && <small>{r.model || `SKU ${r.sku}`}</small>}
                       </div>
                     ))
                   )}

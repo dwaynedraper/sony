@@ -38,6 +38,15 @@
 .changeBtn { border: 1px solid var(--line); background: var(--panel2); color: var(--txt);
   font-weight: 700; font-size: 12px; padding: 7px 11px; border-radius: 9px; cursor: pointer; }
 
+/* Stock <-> Issues, swapped in place */
+.modeRow { display: flex; gap: 6px; background: var(--panel); border: 1px solid var(--line);
+  border-radius: 12px; padding: 4px; }
+.modeBtn { flex: 1; border: 0; background: transparent; color: var(--muted); font-weight: 700;
+  font-size: 12.5px; padding: 9px 6px; border-radius: 9px; cursor: pointer; transition: .15s; }
+.modeBtn:hover { color: var(--txt); }
+.modeOn { background: var(--accent); color: #111; }
+.modeOn:hover { color: #111; }
+
 .h1 { font-size: 20px; font-weight: 800; letter-spacing: -.02em; }
 .hint { color: var(--muted); font-size: 12.5px; margin: 4px 0 16px; line-height: 1.45; }
 .hint b { color: var(--ok); }
@@ -116,11 +125,22 @@
 .arrowBtn:active:not(:disabled) { transform: scale(.92); }
 .arrowBtn:disabled { opacity: .25; cursor: not-allowed; }
 
-.lens { flex: 0 0 auto; width: 92px; background: var(--tile); border: 1px solid var(--tileEdge); border-radius: 10px;
-  padding: 10px 6px; text-align: center; cursor: pointer; transition: .12s; font-size: 11px; font-weight: 700; }
+/* Lens tile: focal length over aperture. The variant line only shows when two
+   lenses on the shelf would otherwise be identical (70-200 GM vs GM II). */
+.lens { flex: 0 0 auto; width: 92px; min-height: 58px; background: var(--tile); border: 1px solid var(--tileEdge);
+  border-radius: 10px; padding: 9px 6px; cursor: pointer; transition: .12s;
+  display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 1px; }
 .lens:active { transform: scale(.97); }
-.lensOut { background: rgba(239, 68, 68, .14); border-color: var(--out); color: #ffb4b4; text-decoration: line-through; }
-.lensLabel { display: flex; align-items: center; justify-content: center; min-height: 30px; }
+.lensFocal { font-weight: 800; font-size: 14px; letter-spacing: -.02em; color: var(--txt); white-space: nowrap; }
+.lensAperture { font-size: 11.5px; font-weight: 700; color: var(--muted); white-space: nowrap; }
+.lensVariant { font-size: 8.5px; font-weight: 800; letter-spacing: .08em; text-transform: uppercase;
+  color: var(--dim); margin-top: 2px; }
+.lensOut { background: rgba(239, 68, 68, .14); border-color: var(--out); }
+.lensOut .lensFocal, .lensOut .lensAperture, .lensOut .lensVariant { color: #ffb4b4; }
+.lensOut .lensFocal { text-decoration: line-through; }
+/* Fallback for anything that isn't a lens (a custom item, a body) */
+.lensLabel { display: flex; align-items: center; justify-content: center; min-height: 30px;
+  font-size: 11px; font-weight: 700; text-align: center; }
 
 /* Footer */
 .foot { position: sticky; bottom: 0; margin: 0 -2px; padding: 14px 2px 6px;
@@ -141,7 +161,10 @@
 /* Closed — but deliberately NOT display:none or visibility:hidden. The search
    input has to stay focusable so iOS will raise the keyboard from the tap. */
 .sheetHidden { opacity: 0; pointer-events: none; }
-.newItem { display: flex; flex-direction: column; gap: 6px; }
+.newItem { display: flex; flex-direction: column; gap: 2px; overflow-y: auto; }
+.newItem .search { margin-bottom: 8px; }
+.fieldLabel { font-size: 10.5px; font-weight: 800; letter-spacing: .1em; text-transform: uppercase;
+  color: var(--dim); margin-bottom: 4px; }
 .primaryBtn:disabled { opacity: .45; cursor: not-allowed; }
 .sheet { background: var(--panel); border-bottom: 1px solid var(--line); border-radius: 0 0 18px 18px; width: 100%;
   max-width: 480px; margin: 0 auto; padding: 16px 16px 20px; max-height: 88dvh;
