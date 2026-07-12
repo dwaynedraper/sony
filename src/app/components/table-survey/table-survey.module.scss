@@ -124,7 +124,13 @@
 .outputText { font-size: 12.5px; color: var(--txt); line-height: 1.5; word-break: break-word; margin: 0 0 10px; }
 
 /* Bottom sheet + picker */
-.sheetBg { position: fixed; inset: 0; background: rgba(0, 0, 0, .55); z-index: 40; display: flex; align-items: flex-end; }
+.sheetBg { position: fixed; inset: 0; background: rgba(0, 0, 0, .55); z-index: 40; display: flex;
+  align-items: flex-end; transition: opacity .16s; }
+/* Closed — but deliberately NOT display:none or visibility:hidden. The search
+   input has to stay focusable so iOS will raise the keyboard from the tap. */
+.sheetHidden { opacity: 0; pointer-events: none; }
+.newItem { display: flex; flex-direction: column; gap: 6px; }
+.primaryBtn:disabled { opacity: .45; cursor: not-allowed; }
 .sheet { background: var(--panel); border-top: 1px solid var(--line); border-radius: 18px 18px 0 0; width: 100%;
   max-width: 480px; margin: 0 auto; padding: 16px 16px 22px; max-height: 84vh; display: flex; flex-direction: column; }
 .sheetH { display: flex; align-items: center; justify-content: space-between; font-weight: 800; font-size: 15px; margin-bottom: 10px; }

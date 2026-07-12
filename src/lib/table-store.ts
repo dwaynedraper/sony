@@ -12,9 +12,11 @@
 
 import {
   buildDefaultLayout,
+  normalizeLayout,
   type TableLayout,
   type ItemCategory,
   CATEGORY_ORDER,
+  CATEGORY_RANK,
 } from "@/data/table-layout";
 
 // ─── Keys ───────────────────────────────────────────────────────────────────
@@ -134,7 +136,9 @@ export function upsertKnownStore(ref: StoreRef): void {
 // ─── Layout (default + per-store overrides) ─────────────────────────────────
 export function getLayout(storeNumber: string): TableLayout {
   const override = read<TableLayout | null>(LAYOUT_PREFIX + storeNumber, null);
-  return override ?? buildDefaultLayout();
+  // Always re-apply the sort rule, so a layout saved under an older rule
+  // still comes back in body -> kit -> lens -> accessory order.
+  return normalizeLayout(override ?? buildDefaultLayout());
 }
 export function saveLayout(storeNumber: string, layout: TableLayout): void {
   write(LAYOUT_PREFIX + storeNumber, layout);
@@ -217,27 +221,43 @@ export function mergeKnownStores(remote: StoreRef[]): StoreRef[] {
   return getKnownStores();
 }
 
-// ─── Catalog for the Edit-mode typeahead ────────────────────────────────────
-export function buildCatalog(): Record<ItemCategory, { label: string; model: string }[]> {
-  const out: Record<ItemCategory, Map<string, string>> = {
-    camera: new Map(),
-    lens: new Map(),
-    kit: new Map(),
-    accessory: new Map(),
-    display: new Map([["Display Box", ""]]),
-    tablet: new Map([["Demo Tablet", ""]]),
+// ─── Catalog for the Edit-mode search ───────────────────────────────────────
+export interface CatalogEntry {
+  label: string;
+  model: string;
+  category: ItemCategory;
+}
+
+/**
+ * One flat, searchable list of everything on the table. Deliberately NOT split
+ * by category: a rep should be able to open the sheet and type "55-210"
+ * straight away, without picking "lens" first. The category rides along with
+ * the entry, so the slot still sorts itself correctly on drop.
+ */
+export function buildCatalog(): CatalogEntry[] {
+  const seen = new Map<string, CatalogEntry>();
+
+  const add = (e: CatalogEntry) => {
+    const key = `${e.category}|${e.label}`;
+    if (!seen.has(key)) seen.set(key, e);
   };
+
   const def = buildDefaultLayout();
   const sections = [def.faces.left, def.faces.center, def.faces.right, ...def.totem];
   for (const sec of sections)
     for (const slot of sec.slots)
-      for (const it of slot.items) out[it.category].set(it.label, it.model);
+      for (const it of slot.items)
+        add({ label: it.label, model: it.model, category: it.category });
 
-  const result = {} as Record<ItemCategory, { label: string; model: string }[]>;
-  for (const cat of CATEGORY_ORDER) {
-    result[cat] = [...out[cat].entries()]
-      .map(([label, model]) => ({ label, model }))
-      .sort((a, b) => a.label.localeCompare(b.label));
-  }
-  return result;
+  add({ label: "Display Box", model: "", category: "display" });
+  add({ label: "Demo Tablet", model: "", category: "tablet" });
+
+  return [...seen.values()].sort(
+    (a, b) =>
+      CATEGORY_RANK[a.category] - CATEGORY_RANK[b.category] ||
+      a.label.localeCompare(b.label)
+  );
 }
+
+/** Category list for the "Add New" type picker. */
+export const CATEGORIES = CATEGORY_ORDER;

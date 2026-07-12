@@ -49,14 +49,19 @@ export interface TableLayout {
   totem: TableSection[];
 }
 
-/** Sort rank so items stack camera -> lens/kit -> accessory. */
+/**
+ * Slots always stack in this order, top to bottom:
+ *   camera body -> camera + lens kit -> lens -> accessory
+ * Applied silently on load and after every edit — there is no manual sorting.
+ * Display boxes and the demo tablet sit at the top, since they own their slot.
+ */
 export const CATEGORY_RANK: Record<ItemCategory, number> = {
   camera: 0,
   display: 0,
   tablet: 0,
-  lens: 1,
   kit: 1,
-  accessory: 2,
+  lens: 2,
+  accessory: 3,
 };
 
 export const CATEGORY_ORDER: ItemCategory[] = [
@@ -76,10 +81,20 @@ function classify(label: string, model: string): ItemCategory {
   return "camera";
 }
 
-/** Sort a slot's items in place into camera -> lens/kit -> accessory order. */
+/** Sort a slot's items in place: body -> kit -> lens -> accessory. */
 export function sortItems(slot: TableSlot): TableSlot {
   slot.items.sort((a, b) => CATEGORY_RANK[a.category] - CATEGORY_RANK[b.category]);
   return slot;
+}
+
+/**
+ * Re-apply the sort rule across a whole layout. Run on every load so a layout
+ * saved under an older rule (or hand-edited) still comes out in the right order.
+ */
+export function normalizeLayout(layout: TableLayout): TableLayout {
+  const sections = [layout.faces.left, layout.faces.center, layout.faces.right, ...layout.totem];
+  for (const section of sections) for (const slot of section.slots) sortItems(slot);
+  return layout;
 }
 
 /** Convert a raw display-slot into a TableSlot of items. */

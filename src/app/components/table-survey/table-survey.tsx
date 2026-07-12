@@ -1,9 +1,9 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import {
   sortItems,
-  CATEGORY_ORDER,
+  normalizeLayout,
   CATEGORY_LABELS,
   type TableLayout,
   type TableSection,
@@ -29,6 +29,8 @@ import {
   getIssues,
   saveIssues,
   buildCatalog,
+  CATEGORIES,
+  type CatalogEntry,
   fetchStores,
   fetchStoreState,
   mergeKnownStores,
@@ -118,8 +120,14 @@ export default function TableSurvey({ mode }: { mode: Mode }) {
   const [editMode, setEditMode] = useState(false);
   const [editor, setEditor] = useState<EditorState | null>(null);
   const [editorSearch, setEditorSearch] = useState("");
+  const [newItem, setNewItem] = useState<{ name: string; cat: ItemCategory | null } | null>(null);
   const [report, setReport] = useState("");
   const [copied, setCopied] = useState(false);
+
+  // The search field stays mounted even when the sheet is closed. That lets us
+  // call focus() synchronously inside the tap handler, which is the only way
+  // iOS Safari will raise the keyboard for you (WebKit requires a user gesture).
+  const searchRef = useRef<HTMLInputElement>(null);
 
   const [knownStores, setKnownStores] = useState<StoreRef[]>([]);
   const [todayNumber, setTodayNumber] = useState("");
@@ -128,6 +136,19 @@ export default function TableSurvey({ mode }: { mode: Mode }) {
 
   const catalog = useMemo(() => buildCatalog(), []);
   const todayIdx = new Date().getDay();
+
+  // One list, every category. Type "55-210" (or "55210") and it just finds it —
+  // no need to pick "lens" first. Matches label and model, punctuation-insensitive.
+  const results = useMemo<CatalogEntry[]>(() => {
+    const q = editorSearch.trim().toLowerCase();
+    if (!q) return catalog;
+    const strip = (s: string) => s.replace(/[^a-z0-9]/gi, "").toLowerCase();
+    const qs = strip(q);
+    return catalog.filter((e) => {
+      const hay = `${e.label} ${e.model}`.toLowerCase();
+      return hay.includes(q) || strip(hay).includes(qs);
+    });
+  }, [catalog, editorSearch]);
 
   // ── Mount ─────────────────────────────────────────────────────────────────
   // localStorage is client-only, so this can only run after mount. Work happens
@@ -183,8 +204,9 @@ export default function TableSurvey({ mode }: { mode: Mode }) {
     if (!cloud) return; // offline — keep the cached copy
 
     if (cloud.layout) {
-      saveLayout(ref.number, cloud.layout);
-      setLayout(cloud.layout);
+      const normalized = normalizeLayout(cloud.layout);
+      saveLayout(ref.number, normalized);
+      setLayout(normalized);
     } else {
       resetLayout(ref.number);
       setLayout(getLayout(ref.number));
@@ -263,15 +285,26 @@ export default function TableSurvey({ mode }: { mode: Mode }) {
   }
 
   // ── Editor ────────────────────────────────────────────────────────────────
+  /** Opened from a tap, so focus() here rides the user gesture and iOS obeys. */
+  function openEditor(next: EditorState) {
+    setEditor(next);
+    setEditorSearch("");
+    setNewItem(null);
+    searchRef.current?.focus();
+  }
   function openEdit(sec: SecRef, slotIdx: number, itemIdx: number) {
     const item = sectionOf(layout!, sec).slots[slotIdx].items[itemIdx];
-    setEditor({ kind: "edit", sec, slotIdx, itemIdx, cat: item.category });
-    setEditorSearch("");
+    openEditor({ kind: "edit", sec, slotIdx, itemIdx, cat: item.category });
   }
   function openAdd(sec: SecRef, slotIdx: number) {
-    setEditor({ kind: "add", sec, slotIdx, itemIdx: null, cat: sec.type === "totem" ? "lens" : null });
-    setEditorSearch("");
+    openEditor({ kind: "add", sec, slotIdx, itemIdx: null, cat: null });
   }
+  function closeEditor() {
+    setEditor(null);
+    setNewItem(null);
+    searchRef.current?.blur();
+  }
+
   function assignItem(label: string, model: string, cat: ItemCategory) {
     if (!editor) return;
     const { sec, slotIdx, itemIdx, kind } = editor;
@@ -287,7 +320,7 @@ export default function TableSurvey({ mode }: { mode: Mode }) {
         sortItems(section.slots[slotIdx]);
       }
     });
-    setEditor(null);
+    closeEditor();
   }
   function removeItem() {
     if (!editor || editor.kind !== "edit" || editor.itemIdx == null) return;
@@ -298,12 +331,17 @@ export default function TableSurvey({ mode }: { mode: Mode }) {
       slot.items.splice(itemIdx, 1);
       if (sec.type === "totem" && slot.items.length === 0) section.slots.splice(slotIdx, 1);
     });
-    setEditor(null);
+    closeEditor();
   }
-  function addNewCustom() {
-    if (!editor?.cat) return;
-    const v = window.prompt(`New ${CATEGORY_LABELS[editor.cat]} (new release or store-specific):`);
-    if (v && v.trim()) assignItem(v.trim(), "", editor.cat);
+
+  /** Start a custom item, pre-filled with whatever's already typed. */
+  function startNewItem() {
+    if (!editor) return;
+    setNewItem({ name: editorSearch.trim(), cat: editor.kind === "edit" ? editor.cat : null });
+  }
+  function saveNewItem() {
+    if (!newItem?.name.trim() || !newItem.cat) return;
+    assignItem(newItem.name.trim(), "", newItem.cat);
   }
 
   /** A face slot always keeps a camera: hide Remove on the last camera square. */
@@ -614,61 +652,97 @@ export default function TableSurvey({ mode }: { mode: Mode }) {
         </>
       )}
 
-      {/* Editor sheet */}
-      {editor && layout && (
-        <div className={styles.sheetBg} onClick={(e) => { if (e.target === e.currentTarget) setEditor(null); }}>
+      {/* Editor sheet — kept mounted so the search field can be focused inside
+          the tap gesture, which is what makes iOS raise the keyboard. */}
+      {layout && (
+        <div
+          className={`${styles.sheetBg} ${editor ? "" : styles.sheetHidden}`}
+          onClick={(e) => { if (e.target === e.currentTarget) closeEditor(); }}
+        >
           <div className={styles.sheet}>
             <div className={styles.sheetH}>
               <span>
-                {editor.kind === "edit"
+                {editor?.kind === "edit"
                   ? `Edit ${editor.cat ? CATEGORY_LABELS[editor.cat].toLowerCase() : "item"}`
-                  : editor.slotIdx === -1 ? "Add a lens to this row" : `Add to position ${editor.slotIdx + 1}`}
+                  : editor?.slotIdx === -1 ? "Add a lens to this row"
+                  : editor ? `Add to position ${editor.slotIdx + 1}` : ""}
               </span>
-              <button className={styles.sheetX} onClick={() => setEditor(null)}>✕</button>
+              <button className={styles.sheetX} onClick={closeEditor}>✕</button>
             </div>
 
-            {editor.kind === "edit" && editor.itemIdx != null && (
+            {editor?.kind === "edit" && editor.itemIdx != null && (
               <div className={styles.cur}>
-                Currently: <b>{sectionOf(layout, editor.sec).slots[editor.slotIdx].items[editor.itemIdx].label}</b>
+                Currently: <b>{sectionOf(layout, editor.sec).slots[editor.slotIdx].items[editor.itemIdx]?.label}</b>
               </div>
             )}
 
-            {editor.kind === "add" && (
-              <div className={styles.catChips}>
-                {CATEGORY_ORDER.map((c) => (
-                  <div key={c} className={`${styles.catChip} ${editor.cat === c ? styles.catChipOn : ""}`}
-                    onClick={() => setEditor({ ...editor, cat: c })}>{CATEGORY_LABELS[c]}</div>
-                ))}
-              </div>
-            )}
+            <input
+              ref={searchRef}
+              className={styles.search}
+              placeholder="Search — e.g. 55-210, A7 IV, mic"
+              value={editorSearch}
+              onChange={(e) => setEditorSearch(e.target.value)}
+              autoComplete="off"
+              enterKeyHint="search"
+              tabIndex={editor ? 0 : -1}
+            />
 
-            <input className={styles.search} placeholder="Search…" value={editorSearch}
-              onChange={(e) => setEditorSearch(e.target.value)} autoComplete="off" />
-
-            <div className={styles.catList}>
-              {!editor.cat ? (
-                <div className={styles.catRow} style={{ opacity: 0.55 }}>Pick a type above…</div>
-              ) : (
-                (() => {
-                  const q = editorSearch.toLowerCase();
-                  const rows = catalog[editor.cat].filter((r) => r.label.toLowerCase().includes(q));
-                  if (!rows.length) {
-                    return <div className={styles.catRow} style={{ opacity: 0.55 }}>No match — use Add New</div>;
-                  }
-                  return rows.map((r) => (
-                    <div key={r.label} className={styles.catRow}
-                      onClick={() => assignItem(r.label, r.model, editor.cat as ItemCategory)}>
-                      <span>{r.label}</span>{r.model && <small>{r.model}</small>}
+            {newItem ? (
+              <div className={styles.newItem}>
+                <input
+                  className={styles.search}
+                  placeholder="Name (e.g. A7 VI Body)"
+                  value={newItem.name}
+                  onChange={(e) => setNewItem({ ...newItem, name: e.target.value })}
+                  autoComplete="off"
+                />
+                <div className={styles.catChips}>
+                  {CATEGORIES.map((c) => (
+                    <div
+                      key={c}
+                      className={`${styles.catChip} ${newItem.cat === c ? styles.catChipOn : ""}`}
+                      onClick={() => setNewItem({ ...newItem, cat: c })}
+                    >
+                      {CATEGORY_LABELS[c]}
                     </div>
-                  ));
-                })()
-              )}
-            </div>
+                  ))}
+                </div>
+                <div className={styles.sheetActions}>
+                  <button className={styles.ghostBtn} onClick={() => setNewItem(null)}>Cancel</button>
+                  <button
+                    className={styles.primaryBtn}
+                    disabled={!newItem.name.trim() || !newItem.cat}
+                    onClick={saveNewItem}
+                  >
+                    Save
+                  </button>
+                </div>
+              </div>
+            ) : (
+              <>
+                <div className={styles.catList}>
+                  {results.length === 0 ? (
+                    <div className={styles.catRow} style={{ opacity: 0.55 }}>No match — use Add New below</div>
+                  ) : (
+                    results.map((r) => (
+                      <div
+                        key={`${r.category}|${r.label}`}
+                        className={styles.catRow}
+                        onClick={() => assignItem(r.label, r.model, r.category)}
+                      >
+                        <span>{r.label}</span>
+                        {r.model && <small>{r.model}</small>}
+                      </div>
+                    ))
+                  )}
+                </div>
 
-            <div className={styles.sheetActions}>
-              {canRemove() && <button className={styles.removeBtn} onClick={removeItem}>Remove this square</button>}
-              <button className={styles.addNew} onClick={addNewCustom}>＋ Add New (custom)</button>
-            </div>
+                <div className={styles.sheetActions}>
+                  {canRemove() && <button className={styles.removeBtn} onClick={removeItem}>Remove this square</button>}
+                  <button className={styles.addNew} onClick={startNewItem}>＋ Add New</button>
+                </div>
+              </>
+            )}
           </div>
         </div>
       )}
