@@ -5,6 +5,8 @@ import { experimental_useObject as useObject } from "@ai-sdk/react";
 import { z } from "zod";
 import styles from "./basket-builder.module.scss";
 
+// Must mirror the route's schema exactly. `condition` is nullable rather than
+// optional because OpenAI Structured Outputs requires every key to be required.
 const basketSchema = z.object({
   summary: z.string(),
   items: z.array(
@@ -12,7 +14,7 @@ const basketSchema = z.object({
       name: z.string(),
       tier: z.enum(["essential", "do_it_right", "only_if"]),
       why: z.string(),
-      condition: z.string().optional(),
+      condition: z.string().nullable(),
     })
   ),
 });

@@ -40,11 +40,14 @@ const basketSchema = z.object({
       why: z
         .string()
         .describe("One short sentence the rep can say out loud. Benefit-led. No spec dumps, no marketing fluff."),
+      // NOTE: nullable, not optional. OpenAI Structured Outputs requires every
+      // property to appear in `required`, so an optional field is rejected
+      // outright. Nullable gives us the same thing: always present, may be null.
       condition: z
         .string()
-        .optional()
+        .nullable()
         .describe(
-          "REQUIRED for only_if items. The trigger, phrased so the rep can ask the customer directly, e.g. 'they're offering virtual tours'."
+          "For only_if items ONLY: the trigger, phrased so the rep can ask the customer directly — e.g. \"they're offering virtual tours\". MUST be null for essential and do_it_right items."
         ),
     })
   ),
@@ -99,6 +102,8 @@ THE TIERS
 - "essential": they cannot do this work without it. Its absence means the camera they just bought underdelivers.
 - "do_it_right": the difference between a hobby result and work somebody pays for. For real estate, a geared head lives here — you can shoot without it, but not sell without it.
 - "only_if": situational. You MUST fill in "condition" with the trigger, phrased so the rep can ask the customer directly — "they're offering virtual tours", "they shoot indoors after dark". The condition is the most valuable part: it tells the rep which question to ask.
+
+"condition" must be null for every "essential" and "do_it_right" item. Only "only_if" items carry a condition.
 
 TONE
 "why" is one short sentence a rep can say out loud on the floor. Lead with the benefit or the problem it solves. No spec dumps, no "elevate your photography" filler.`,
