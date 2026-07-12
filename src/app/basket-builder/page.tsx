@@ -4,7 +4,7 @@ import BackButton from "@/components/back-button";
 
 export const metadata: Metadata = {
   title: "Basket Builder | Sony Rep Toolkit",
-  description: "Create a customized equipment basket for any photography genre.",
+  description: "Build an honest accessory basket from what they bought, what they shoot, and what they need.",
 };
 
 export default function BasketBuilderPage() {

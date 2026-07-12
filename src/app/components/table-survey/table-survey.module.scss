@@ -123,16 +123,19 @@
 .output { margin-top: 10px; background: var(--panel); border: 1px solid var(--line); border-radius: 12px; padding: 12px; }
 .outputText { font-size: 12.5px; color: var(--txt); line-height: 1.5; word-break: break-word; margin: 0 0 10px; }
 
-/* Bottom sheet + picker */
+/* Sheet — anchored to the TOP. The keyboard eats the bottom of a phone screen,
+   so the sheet drops down from the top and shrinks back up toward it as the
+   result list gets shorter. It can never end up behind the keyboard. */
 .sheetBg { position: fixed; inset: 0; background: rgba(0, 0, 0, .55); z-index: 40; display: flex;
-  align-items: flex-end; transition: opacity .16s; }
+  align-items: flex-start; transition: opacity .16s; }
 /* Closed — but deliberately NOT display:none or visibility:hidden. The search
    input has to stay focusable so iOS will raise the keyboard from the tap. */
 .sheetHidden { opacity: 0; pointer-events: none; }
 .newItem { display: flex; flex-direction: column; gap: 6px; }
 .primaryBtn:disabled { opacity: .45; cursor: not-allowed; }
-.sheet { background: var(--panel); border-top: 1px solid var(--line); border-radius: 18px 18px 0 0; width: 100%;
-  max-width: 480px; margin: 0 auto; padding: 16px 16px 22px; max-height: 84vh; display: flex; flex-direction: column; }
+.sheet { background: var(--panel); border-bottom: 1px solid var(--line); border-radius: 0 0 18px 18px; width: 100%;
+  max-width: 480px; margin: 0 auto; padding: 16px 16px 20px; max-height: 88dvh;
+  display: flex; flex-direction: column; }
 .sheetH { display: flex; align-items: center; justify-content: space-between; font-weight: 800; font-size: 15px; margin-bottom: 10px; }
 .sheetX { border: 0; background: var(--panel2); color: var(--txt); width: 30px; height: 30px; border-radius: 9px; cursor: pointer; }
 .cur { font-size: 13px; color: var(--muted); margin-bottom: 12px; }
@@ -143,7 +146,11 @@
 .catChipOn { background: var(--accent); color: #111; border-color: var(--accent); }
 .search { width: 100%; padding: 11px 12px; border-radius: 11px; border: 1px solid var(--line); background: var(--bg);
   color: var(--txt); font-size: 14px; margin-bottom: 10px; }
-.catList { overflow-y: auto; flex: 1; display: flex; flex-direction: column; gap: 5px; margin-bottom: 12px; min-height: 70px; }
+/* `flex: 0 1 auto` (not `flex: 1`) is what lets the sheet shrink: the list sizes
+   to its content instead of stretching to fill, so three results means a short
+   sheet sitting up at the top, clear of the keyboard. */
+.catList { overflow-y: auto; flex: 0 1 auto; display: flex; flex-direction: column; gap: 5px;
+  margin-bottom: 12px; min-height: 0; max-height: 45dvh; }
 .catRow { padding: 11px 12px; border-radius: 10px; background: var(--tile); border: 1px solid var(--tileEdge);
   cursor: pointer; font-size: 13.5px; font-weight: 600; display: flex; justify-content: space-between; gap: 8px; }
 .catRow small { color: var(--dim); font-weight: 500; }
