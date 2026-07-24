@@ -25,7 +25,17 @@ const KNOWN_KEY = "sony-known-stores";
 const SCHEDULE_KEY = "sony-week-schedule";
 const LAYOUT_PREFIX = "sony-layout-";
 const STOCK_PREFIX = "sony-stock-";
+const STOCK_TS_PREFIX = "sony-stock-ts-"; // when the OOS list was last EDITED
 const ISSUES_PREFIX = "sony-issues-";
+
+/**
+ * Out-of-stock lists are a same-day thing. Nobody should be maintaining
+ * yesterday's walk, so a list auto-clears 30 hours after it was last edited
+ * (a day plus a buffer for closing/opening shifts). Display issues do NOT
+ * expire — a broken camera stays broken until someone fixes it.
+ */
+export const STOCK_TTL_MS = 30 * 60 * 60 * 1000;
+export const STOCK_TTL_HOURS = 30;
 
 // ─── Types ──────────────────────────────────────────────────────────────────
 export interface StoreRef {
@@ -169,8 +179,28 @@ export function clearDeviceData(): void {
 export function getStock(storeNumber: string): StockMap {
   return read<StockMap>(STOCK_PREFIX + storeNumber, {});
 }
+/** Save the OOS map only. Does NOT touch the edit timestamp — see recordStockEdit. */
 export function saveStock(storeNumber: string, map: StockMap): void {
   write(STOCK_PREFIX + storeNumber, map);
+}
+
+/**
+ * Stamp the OOS list as edited-now. Called only on a genuine user toggle, never
+ * on the load-time rewrites — otherwise every page load would refresh the clock
+ * and the list would never expire.
+ */
+export function recordStockEdit(storeNumber: string): void {
+  write(STOCK_TS_PREFIX + storeNumber, Date.now());
+}
+export function getStockEditedAt(storeNumber: string): number | null {
+  return read<number | null>(STOCK_TS_PREFIX + storeNumber, null);
+}
+export function clearStockTs(storeNumber: string): void {
+  if (hasWindow()) localStorage.removeItem(STOCK_TS_PREFIX + storeNumber);
+}
+/** True if an OOS list edited at `editedAt` is past its 30-hour life. */
+export function stockIsStale(editedAt: number | null): boolean {
+  return editedAt != null && Date.now() - editedAt > STOCK_TTL_MS;
 }
 export function getIssues(storeNumber: string): IssuesMap {
   return read<IssuesMap>(ISSUES_PREFIX + storeNumber, {});
@@ -184,6 +214,8 @@ export interface CloudState {
   store: StoreRef;
   layout: TableLayout | null; // null = shipped default planogram
   stock: StockMap;
+  /** ISO timestamp of the OOS list's last write — used for 30h expiry. */
+  stockUpdatedAt: string | null;
   issues: IssuesMap;
 }
 

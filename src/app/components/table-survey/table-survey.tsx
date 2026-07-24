@@ -29,6 +29,11 @@ import {
   hasLayoutOverride,
   getStock,
   saveStock,
+  recordStockEdit,
+  getStockEditedAt,
+  clearStockTs,
+  stockIsStale,
+  STOCK_TTL_HOURS,
   getIssues,
   saveIssues,
   buildCatalog,
@@ -229,11 +234,13 @@ export default function TableSurvey({ mode: initialMode }: { mode: Mode }) {
     setKnownStores(getKnownStores());
 
     // 1. Cached copy, instantly. Prune for display but don't persist yet —
-    //    the cloud may still have the truth.
+    //    the cloud may still have the truth. A locally-stale OOS list shows
+    //    empty right away rather than flashing yesterday's marks.
     let l = getLayout(ref.number);
     const cached = pruneToLayout(l, getStock(ref.number), getIssues(ref.number));
+    const cachedStock = stockIsStale(getStockEditedAt(ref.number)) ? {} : cached.stock;
     setLayout(l);
-    setStock(cached.stock);
+    setStock(cachedStock);
     setIssues(cached.issues);
 
     // 2. Reconcile with the cloud.
@@ -255,15 +262,32 @@ export default function TableSurvey({ mode: initialMode }: { mode: Mode }) {
       i = cloud.issues;
     }
 
-    // 3. Prune against the final layout and write the clean state back, so the
-    //    orphans are gone for good rather than resurrected on the next load.
+    // 3. Prune against the final layout, then apply the 30-hour OOS expiry.
     const clean = pruneToLayout(l, s, i);
+
+    // Freshness = the cloud's write time when online, else the local edit
+    // stamp. A non-empty OOS list past 30h is wiped locally AND in the cloud,
+    // so it's gone for everyone — not just this device.
+    const editedAt = cloud
+      ? cloud.stockUpdatedAt
+        ? new Date(cloud.stockUpdatedAt).getTime()
+        : null
+      : getStockEditedAt(ref.number);
+    const expired = Object.keys(clean.stock).length > 0 && stockIsStale(editedAt);
+    const finalStock = expired ? {} : clean.stock;
+
     setLayout(l);
-    setStock(clean.stock);
+    setStock(finalStock);
     setIssues(clean.issues);
-    saveStock(ref.number, clean.stock);
+    saveStock(ref.number, finalStock);
     saveIssues(ref.number, clean.issues);
-    if (clean.dropped > 0 || cloud) {
+
+    if (expired) {
+      clearStockTs(ref.number);
+      pushStock(ref.number, {}); // clear the stale list cloud-side too
+    } else if (clean.dropped > 0) {
+      // Only push when pruning actually removed something. Pushing on every
+      // load would keep bumping the cloud's timestamp and defeat the expiry.
       pushStock(ref.number, clean.stock);
       pushIssues(ref.number, clean.issues);
     }
@@ -296,6 +320,7 @@ export default function TableSurvey({ mode: initialMode }: { mode: Mode }) {
       if (next[key]) delete next[key];
       else next[key] = true;
       saveStock(store.number, next);
+      recordStockEdit(store.number); // resets the 30h clock — a real edit
       pushStock(store.number, next);
       return next;
     });
@@ -336,22 +361,34 @@ export default function TableSurvey({ mode: initialMode }: { mode: Mode }) {
     setLayout(getLayout(store.number));
   }
 
-  /** Wipe this store's survey — marks only, layout untouched. */
-  function clearMarks() {
+  /** Clear the OOS list only. Display issues and the layout are untouched. */
+  function clearStock() {
     if (!store) return;
     const ok = window.confirm(
-      `Clear every out-of-stock mark and display issue for store #${store.number}?\n\n` +
-        `This cannot be undone, and it clears them for everyone using this store. ` +
-        `The store's layout is not affected.`
+      `Clear the Out-of-Stock list for store #${store.number}?\n\n` +
+        `Wipes every out-of-stock mark for everyone using this store. ` +
+        `Display issues and the layout are not affected. This can't be undone.`
     );
     if (!ok) return;
     setStock({});
-    setIssues({});
     saveStock(store.number, {});
+    clearStockTs(store.number);
     pushStock(store.number, {});
+    setReport("");
+  }
+
+  /** Clear display issues only. The OOS list and the layout are untouched. */
+  function clearIssues() {
+    if (!store) return;
+    const ok = window.confirm(
+      `Clear all Display Issues for store #${store.number}?\n\n` +
+        `Wipes every flagged issue for everyone using this store. ` +
+        `The out-of-stock list and the layout are not affected. This can't be undone.`
+    );
+    if (!ok) return;
+    setIssues({});
     saveIssues(store.number, {});
     pushIssues(store.number, {});
-    setDone({ left: false, center: false, right: false, totem: false });
     setReport("");
   }
 
@@ -628,6 +665,9 @@ export default function TableSurvey({ mode: initialMode }: { mode: Mode }) {
           <div className={styles.h1}>{mode === "stock" ? "Out of Stock" : "Display Issues"}</div>
           <div className={styles.hint}>
             Top-down view of the table. Tap the side you&apos;re walking. A finished side shows a <b>green outline + ✓</b>.
+            {mode === "stock" && (
+              <> The out-of-stock list clears itself {STOCK_TTL_HOURS} hours after your last change.</>
+            )}
           </div>
           <div className={styles.tableMap}>
             <div className={`${styles.sec} ${styles.totem} ${done.totem ? styles.done : ""}`} onClick={openTotem}>
@@ -672,8 +712,11 @@ export default function TableSurvey({ mode: initialMode }: { mode: Mode }) {
                 Restore default planogram
               </button>
             )}
-            <button className={styles.restoreBtn} onClick={clearMarks}>
-              Clear all marks for store #{store.number}
+            <button className={styles.restoreBtn} onClick={clearStock}>
+              Clear Out-of-Stock list · #{store.number}
+            </button>
+            <button className={styles.restoreBtn} onClick={clearIssues}>
+              Clear Display Issues · #{store.number}
             </button>
             <button className={styles.dangerBtn} onClick={resetDevice}>
               Reset everything on this device

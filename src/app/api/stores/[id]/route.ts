@@ -25,6 +25,7 @@ export async function GET(_req: Request, { params }: RouteParams) {
     store: store ?? { number: id },
     layout: layoutDoc?.layout ?? null, // null = use the shipped default planogram
     stock: stockDoc?.stock ?? {},
+    stockUpdatedAt: stockDoc?.updatedAt ?? null, // drives the 30h OOS expiry
     issues: issuesDoc?.issues ?? {},
   });
 }
